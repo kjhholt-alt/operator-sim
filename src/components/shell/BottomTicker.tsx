@@ -19,7 +19,7 @@ export function BottomTicker() {
         {latest}
       </div>
       <div className="font-mono text-[10px] text-fg-dim">
-        <span className="text-fg-mute mr-1">Build</span> v0.0.4-day4
+        <span className="text-fg-mute mr-1">Build</span> v0.0.5-day5
       </div>
       <div className="font-mono text-[10px] text-fg-dim">
         <kbd className="text-fg-base">Ctrl+K</kbd>

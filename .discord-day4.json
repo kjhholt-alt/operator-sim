@@ -1,0 +1,47 @@
+{
+  "username": "Operator Sim Build",
+  "embeds": [
+    {
+      "title": "Day 4 shipped — ontology drill-down works end-to-end",
+      "url": "https://github.com/kjhholt-alt/operator-sim/commit/9cb723e",
+      "description": "Click a unit dot on the map. Dossier opens. Click `homebase` → station dossier. Click `address` → address dossier with all incidents there. Click an incident → click `caller` → click their `address` again. Walk back through the stack with `←` or Alt+Left. The graph is the game.",
+      "color": 4185983,
+      "fields": [
+        {"name": "Commit", "value": "[`9cb723e`](https://github.com/kjhholt-alt/operator-sim/commit/9cb723e)", "inline": true},
+        {"name": "Build", "value": "tsc clean · 22/22 tests · vite 19s · 499 KB gz", "inline": true},
+        {"name": "Phase 1 progress", "value": "Day 0 ✅ · Day 1 ✅ · Day 2 ✅ · Day 3 ✅ · **Day 4 ✅** · Day 5 next", "inline": false},
+        {
+          "name": "Selection history",
+          "value": "Browser-style back/forward stack in the floor store. Alt+← / Alt+→ keyboard nav. Breadcrumb header with disabled-state chips + depth counter. Idempotent re-select (no churn), 50-entry cap.",
+          "inline": false
+        },
+        {
+          "name": "Every link is clickable",
+          "value": "New `EntityLink` row component — kind+id, click navigates, ↗ glyph, hover underline. New dossiers: **Address**, **Caller**, **Vehicle**, **Intel**. Existing dossiers upgraded — every linked row navigates. Unit dossier shows live route progress (km/total km) while en_route.",
+          "inline": false
+        },
+        {
+          "name": "Map + LeftRail",
+          "value": "Click any unit dot or incident pulse → opens dossier. LeftRail expand-list works for ALL kinds (not just units). Added Caller / Vehicle / Address / Intel sections.",
+          "inline": false
+        },
+        {
+          "name": "Seed",
+          "value": "Margaret K. caller (cardiac history, repeat caller) linked to i_2031. QC weather intel linked to i_2031 — gives Incident → Intel a real hop.",
+          "inline": false
+        },
+        {
+          "name": "Demo flow",
+          "value": "Click E1 → click `homebase` → click first homed unit → Alt+← three times → back where you started. Click incident pulse → caller → address → incidents-here.",
+          "inline": false
+        },
+        {
+          "name": "Day 5 next",
+          "value": "Cmdk verb registry: autocomplete unit/incident IDs as you type, Tab-complete arguments, verb-specific hints. The palette becomes the keyboard-only path through the whole game.",
+          "inline": false
+        }
+      ],
+      "footer": {"text": "Operator Sim · Day 4 · master @ 9cb723e"}
+    }
+  ]
+}
