@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useFloor } from "@/state/useFloor";
 
 function useClock() {
   const [now, setNow] = useState(() => new Date());
@@ -19,12 +20,28 @@ function formatZulu(d: Date) {
 
 export function TopStrip() {
   const now = useClock();
+  const units = useFloor((s) => s.units);
+  const incidents = useFloor((s) => s.incidents);
+
+  const activeUnitCount = Array.from(units.values()).filter(
+    (u) => u.status === "en_route" || u.status === "on_scene" || u.status === "transporting",
+  ).length;
+
+  const queuedIncidents = Array.from(incidents.values()).filter(
+    (i) => i.status === "queued",
+  ).length;
+
+  const resolved24h = Array.from(incidents.values()).filter(
+    (i) => i.status === "resolved",
+  ).length;
+
+  const fmt = (n: number) => n.toString().padStart(2, "0");
 
   const kpis = [
-    { label: "UNITS", value: "00", tone: "fg-bright" },
-    { label: "ACTIVE", value: "00", tone: "accent-cyan" },
-    { label: "QUEUED", value: "00", tone: "accent-amber" },
-    { label: "RESOLVED 24H", value: "00", tone: "accent-emerald" },
+    { label: "UNITS", value: fmt(units.size), tone: "fg-bright" },
+    { label: "ACTIVE", value: fmt(activeUnitCount), tone: "accent-cyan" },
+    { label: "QUEUED", value: fmt(queuedIncidents), tone: "accent-amber" },
+    { label: "RESOLVED 24H", value: fmt(resolved24h), tone: "accent-emerald" },
     { label: "AVG RESPONSE", value: "—", tone: "fg-base" },
   ];
 

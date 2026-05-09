@@ -1,5 +1,5 @@
 import { cn } from "@/lib/cn";
-import { Map } from "@/components/map/Map";
+import { OperatorMap } from "@/components/map/Map";
 
 interface Props {
   className?: string;
@@ -8,7 +8,7 @@ interface Props {
 export function CenterMap({ className }: Props) {
   return (
     <main className={cn("bg-bg-base relative min-h-0 overflow-hidden", className)}>
-      <Map />
+      <OperatorMap />
 
       {/* Sector overlay placeholder (top-left) */}
       <div className="absolute top-3 left-3 font-mono text-[9px] uppercase tracking-[0.22em] text-fg-dim bg-bg-panel/80 backdrop-blur-sm px-2 py-1 border border-border-subtle">

@@ -5,9 +5,15 @@ import { CenterMap } from "@/components/shell/CenterMap";
 import { RightRail } from "@/components/shell/RightRail";
 import { BottomTicker } from "@/components/shell/BottomTicker";
 import { CommandPalette } from "@/components/shell/CommandPalette";
+import { bootFloor } from "@/state/seed";
 
 function App() {
   const [paletteOpen, setPaletteOpen] = useState(false);
+
+  // Boot-time seed: load addresses + demo entities so the floor is populated.
+  useEffect(() => {
+    bootFloor().catch((err) => console.error("[App] bootFloor failed", err));
+  }, []);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {

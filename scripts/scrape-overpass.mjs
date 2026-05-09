@@ -24,8 +24,12 @@ function arg(name, fallback) {
   return i === -1 ? fallback : args[i + 1];
 }
 
+// Davenport-core default for Day-2 demo (~5km × 4km, ~5-15k buildings).
+// Full QC bbox `-90.7,41.4,-90.4,41.7` works but is slow and hits Overpass
+// 406 on the buildings query (response too large). Phase-2 task: tile the
+// scrape into 4 quadrants and merge.
 const city = arg("city", "quad_cities");
-const bboxStr = arg("bbox", "-90.7,41.4,-90.4,41.7");
+const bboxStr = arg("bbox", "-90.60,41.51,-90.54,41.55");
 const [west, south, east, north] = bboxStr.split(",").map(Number);
 
 if ([west, south, east, north].some(Number.isNaN)) {
@@ -64,16 +68,31 @@ const Q_ADDRESSES = `
 out tags;
 `;
 
-async function fetchOverpass(query, label) {
-  console.log(`[overpass] querying ${label}…`);
+const USER_AGENT = "operator-sim/0.1 (+https://github.com/kjhholt-alt/operator-sim)";
+
+async function fetchOverpass(query, label, attempt = 1) {
+  console.log(`[overpass] querying ${label}…${attempt > 1 ? ` (retry ${attempt})` : ""}`);
   const t0 = Date.now();
   const res = await fetch(ENDPOINT, {
     method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      "User-Agent": USER_AGENT,
+      Accept: "application/json",
+    },
     body: `data=${encodeURIComponent(query)}`,
   });
+  if (res.status === 429 || res.status === 504) {
+    if (attempt < 3) {
+      const wait = attempt * 5000;
+      console.log(`[overpass] ${label} ${res.status}, waiting ${wait}ms`);
+      await new Promise((r) => setTimeout(r, wait));
+      return fetchOverpass(query, label, attempt + 1);
+    }
+  }
   if (!res.ok) {
-    throw new Error(`Overpass ${label} failed: ${res.status} ${res.statusText}`);
+    const body = await res.text().catch(() => "");
+    throw new Error(`Overpass ${label} failed: ${res.status} ${res.statusText}${body ? " — " + body.slice(0, 200) : ""}`);
   }
   const json = await res.json();
   const ms = Date.now() - t0;
@@ -130,11 +149,12 @@ async function main() {
   console.log(`[scrape] city=${city} bbox=[${west},${south},${east},${north}]`);
   console.log(`[scrape] output: ${outDir}`);
 
-  const [roads, buildings, addresses] = await Promise.all([
-    fetchOverpass(Q_ROADS, "roads"),
-    fetchOverpass(Q_BUILDINGS, "buildings"),
-    fetchOverpass(Q_ADDRESSES, "addresses"),
-  ]);
+  // Serialize queries — Overpass throttles concurrent requests from the same client.
+  const roads = await fetchOverpass(Q_ROADS, "roads");
+  await new Promise((r) => setTimeout(r, 1500));
+  const buildings = await fetchOverpass(Q_BUILDINGS, "buildings");
+  await new Promise((r) => setTimeout(r, 1500));
+  const addresses = await fetchOverpass(Q_ADDRESSES, "addresses");
 
   const roadsGeo = waysToGeoJSON(roads.elements ?? [], "way");
   const buildingsGeo = buildingsToGeoJSON(buildings.elements ?? []);
