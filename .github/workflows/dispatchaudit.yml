@@ -1,0 +1,42 @@
+name: dispatchaudit
+
+on:
+  pull_request:
+    paths:
+      - "src/sim/**"
+      - "src/lib/schemas.ts"
+      - "data/shifts/**"
+      - "data/intel/**"
+
+jobs:
+  audit:
+    name: dispatch invariants + ontology integrity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Validate shift docs against schema
+        run: |
+          if [ -f scripts/validate-shifts.mjs ]; then
+            node scripts/validate-shifts.mjs
+          else
+            echo "shift validator not yet shipped — skipping"
+          fi
+      - name: FSM invariant tests
+        run: |
+          if npm run | grep -q "test:fsm"; then
+            npm run test:fsm
+          else
+            echo "FSM tests not yet shipped — skipping"
+          fi
+      - name: Ontology integrity check
+        run: |
+          if [ -f scripts/check-ontology.mjs ]; then
+            node scripts/check-ontology.mjs
+          else
+            echo "ontology check not yet shipped — skipping"
+          fi

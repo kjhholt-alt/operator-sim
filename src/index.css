@@ -1,0 +1,75 @@
+@import "tailwindcss";
+@import "@fontsource/jetbrains-mono/400.css";
+@import "@fontsource/jetbrains-mono/500.css";
+@import "@fontsource/jetbrains-mono/600.css";
+@import "@fontsource/ibm-plex-sans/400.css";
+@import "@fontsource/ibm-plex-sans/500.css";
+@import "@fontsource/ibm-plex-sans/600.css";
+@import "@fontsource/ibm-plex-sans/700.css";
+
+/*
+ * Watchfloor — Foundry-grade design tokens.
+ * Locked Day 0 per memory: feedback_design_palantir.md.
+ * Don't drift. New shades require an entry here, not inline hex.
+ */
+@theme {
+  /* Surfaces */
+  --color-bg-base: #080b12;
+  --color-bg-panel: #0d111c;
+  --color-bg-elev: #111729;
+  --color-bg-hover: #162039;
+
+  /* Borders */
+  --color-border-subtle: #1a2235;
+  --color-border-bright: #2b3a55;
+  --color-border-active: #4ad8e6;
+
+  /* Foreground */
+  --color-fg-mute: #4a5775;
+  --color-fg-dim: #6b7a96;
+  --color-fg-base: #c8d3e6;
+  --color-fg-bright: #ffffff;
+
+  /* Accents — semantic */
+  --color-accent-cyan: #4ad8e6;     /* live / active / selected */
+  --color-accent-emerald: #3fd97f;  /* resolved / safe / success */
+  --color-accent-amber: #f0b85a;    /* warning / en-route / pending */
+  --color-accent-crimson: #ec5b6b;  /* critical / down / failed */
+  --color-accent-violet: #a07aff;   /* intel / linked / inferred */
+
+  /* Type */
+  --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", "Consolas", monospace;
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  background: var(--color-bg-base);
+  color: var(--color-fg-base);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
+}
+
+/* Density rule: dense data uses mono. */
+.font-mono { font-family: var(--font-mono); }
+.font-sans { font-family: var(--font-sans); }
+
+/* Scrollbars — slim, neutral. */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-border-subtle); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-border-bright); }
+
+/* Selection — accent cyan. */
+::selection { background: var(--color-accent-cyan); color: var(--color-bg-base); }
+
+/* Focus rings — subtle, accent. */
+:focus-visible {
+  outline: 1px solid var(--color-accent-cyan);
+  outline-offset: 1px;
+}
