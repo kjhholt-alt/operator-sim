@@ -160,6 +160,28 @@ describe("spawnDueIncidents", () => {
     expect(r.incidents).toHaveLength(1);
     expect(r.incidents[0].address_id).toBe("addr_0");
   });
+
+  it("spawns ALL due incidents in a single call when game_min jumps past several", () => {
+    // Simulates a high-speed tick where game_min jumps from 0 to 10 in one frame.
+    const r = spawnDueIncidents(
+      makeShift(),
+      10,
+      new Set(),
+      syntheticAddresses(["100 Main St", "200 Main St"]),
+    );
+    expect(r.incidents.map((i) => i.id).sort()).toEqual(["i_a", "i_b"]);
+    expect(r.spawned_ids).toHaveLength(2);
+  });
+
+  it("spawn at the exact spawn_time_game_min boundary (>=, not strict >)", () => {
+    const r = spawnDueIncidents(
+      makeShift(),
+      1.0, // i_a.spawn_time_game_min === 1.0
+      new Set(),
+      syntheticAddresses(["100 Main St", "200 Main St"]),
+    );
+    expect(r.incidents.map((i) => i.id)).toEqual(["i_a"]);
+  });
 });
 
 describe("buildShiftIntel", () => {
@@ -238,5 +260,85 @@ describe("computeOutcome", () => {
     const r = out.per_incident.find((p) => p.shift_incident_id === first.id)!;
     expect(r.outcome).toBe("resolved_late");
     expect(r.late_by_game_min).toBeCloseTo(0.7, 5);
+  });
+
+  it("treats resolution AT the deadline as in-window (boundary)", () => {
+    const shift = makeShift();
+    const live = new Map<string, Incident>();
+    const first = shift.incidents[0];
+    live.set(
+      first.id,
+      fakeIncident(first.id, "resolved", first.spawn_time_game_min + first.resolution_window_game_min),
+    );
+    const out = computeOutcome(shift, live);
+    const r = out.per_incident.find((p) => p.shift_incident_id === first.id)!;
+    expect(r.outcome).toBe("resolved_in_window");
+    expect(r.late_by_game_min).toBeUndefined();
+  });
+
+  it("classifies a cancelled incident as cancelled (no penalty in late count)", () => {
+    const shift = makeShift();
+    const live = new Map<string, Incident>();
+    const first = shift.incidents[0];
+    live.set(first.id, fakeIncident(first.id, "cancelled"));
+    const out = computeOutcome(shift, live);
+    const r = out.per_incident.find((p) => p.shift_incident_id === first.id)!;
+    expect(r.outcome).toBe("cancelled");
+    expect(out.cancelled).toBe(1);
+    expect(out.resolved_late).toBe(0);
+  });
+
+  it("classifies a still-on-scene incident at shift end as missed", () => {
+    const shift = makeShift();
+    const live = new Map<string, Incident>();
+    const first = shift.incidents[0];
+    live.set(first.id, fakeIncident(first.id, "on_scene"));
+    const out = computeOutcome(shift, live);
+    const r = out.per_incident.find((p) => p.shift_incident_id === first.id)!;
+    expect(r.outcome).toBe("missed");
+  });
+
+  it("grade boundaries: score=0.85 → A, score=0.70 → B", () => {
+    // Build a 10-incident shift; 8 in-window + 2 missed → 0.80 → grade B
+    const tenInc: Shift = {
+      id: "boundary",
+      date: "2026-05-09",
+      city: "quad_cities",
+      difficulty_tier: 1,
+      length_game_min: 12,
+      incidents: Array.from({ length: 10 }, (_, i) => ({
+        id: `i_${i}`,
+        spawn_time_game_min: i,
+        type: "alarm_false" as const,
+        severity: "low" as const,
+        address: "100 Main St",
+        resolution_window_game_min: 1,
+        narrative_hooks: [],
+      })),
+      intel: [],
+      narrative_threads: [],
+    };
+    const live = new Map<string, Incident>();
+    for (let i = 0; i < 8; i++) {
+      live.set(`i_${i}`, fakeIncident(`i_${i}`, "resolved", i + 0.5));
+    }
+    const out = computeOutcome(tenInc, live);
+    expect(out.score).toBeCloseTo(0.8, 5);
+    expect(out.grade).toBe("B");
+  });
+});
+
+describe("loadShift (defensive reset)", () => {
+  it("loadShift resets game_min and unpauses (smoke through useFloor)", async () => {
+    const { useFloor } = await import("@/state/useFloor");
+    const shift = parseShift(shippedYaml());
+    useFloor.setState({ game_min: 9.5, paused: true });
+    useFloor.getState().loadShift(shift);
+    const s = useFloor.getState();
+    expect(s.game_min).toBe(0);
+    expect(s.paused).toBe(false);
+    expect(s.shift_status).toBe("running");
+    expect(s.incidents_spawned.size).toBe(0);
+    expect(s.shift_outcome).toBeNull();
   });
 });

@@ -2,84 +2,85 @@
 
 > Updated by Producer agent every 30 min during active sprints. This file IS the truth.
 
-**Last updated:** 2026-05-09 — end of Day 0 autonomous run
-**Phase:** Day 0 complete · Day 1 research complete · Day 2 prep complete
-**Build:** v0.0.1-day0
-**Title:** Operator Sim — locked. (Renamed from "Watchfloor" placeholder 2026-05-09 evening.)
+**Last updated:** 2026-05-09 — end of Day 7 autonomous run · **Producer touchpoint #1 due**
+**Phase:** Day 0–7 ✅ (Phase 1, "playable Tier 1," is complete)
+**Build:** v0.0.7-day7
 **Repo:** [github.com/kjhholt-alt/operator-sim](https://github.com/kjhholt-alt/operator-sim)
 **End-of-year goal:** Steam Early Access launch by 2026-12-31. See `docs/GDD.md` § 11 for the 8-phase roadmap.
-**CI:** workflows wired, will run on first PR
-**Open touchpoint:** none — autonomous
+**CI:** workflows green; `npm run validate:shifts` runs against the shipped Tier-1 YAML.
+**Open touchpoint:** **Touchpoint #1 — "Does it feel like Operator Sim?"** Posted to `#claude-chat`.
 **Blockers:** none
-
-**API keys:**
-- ✅ Firecrawl (`fc-d6c9b3f0fbb344c08ea5a3a94b164cf4`) — saved to `.env` (gitignored). Researcher unblocked for next reference scrape.
-- ✅ Discord webhook — saved to `.env`.
 
 ---
 
-## Done (Day 0 autonomous run, 2026-05-09)
+## What's playable today
 
-### Scaffold
-- Repo at `kjhholt-alt/operator-sim` (public). Vite + React 19 + Tailwind 4 + Tauri 2.
-- Shell components: TopStrip, LeftRail, CenterMap (with live MapLibre), RightRail, BottomTicker, CommandPalette.
-- Palantir tokens locked in `src/index.css` (matches `feedback_design_palantir.md`).
-- JetBrains Mono + IBM Plex Sans fonts.
-- Build green: tsc clean, vite 4.8s, 5/5 vitest tests passing.
+```
+Boot → 3 units staged at Davenport Central, Tier-1 shift armed (5 incidents over 12 game-min).
+Press Ctrl+K → palette → type "dis" → Tab → "dispatch " → Tab → top-suggested available unit
+→ Tab → top-suggested active incident → Enter. Unit routes on real OSM roads, dwells on scene
+for the resolution window, returns home. New incidents flow into the queue at scheduled times.
+At T+12:00 the win/loss summary lands with an S/A/B/C/D grade.
+```
 
-### Day 1 work pre-shipped
-- `src/lib/schemas.ts` — Zod schemas for all 8 entity kinds + Shift document.
-- `src/state/useFloor.ts` — zustand store (time, selection, camera, working set, event log).
-- `src/state/db.ts` — Dexie schema for IndexedDB persistence.
-- `src/components/map/Map.tsx` — MapLibre boots OpenFreeMap Liberty tiles, syncs camera to floor store.
-- `scripts/scrape-overpass.mjs` — bake Quad Cities (or any bbox) roads/buildings/addresses.
-- `scripts/validate-shifts.mjs` — CI sanity gate for Designer's shift YAML.
-- `vitest.config.ts` — jsdom env, alias.
+- 1× speed: ~48 real seconds for a full shift.
+- 4× speed: ~12 real seconds.
+- Pause toggle / 0.5×/1×/2×/4× speed picker on TopStrip.
 
-### Research dossiers (5 files, ~9,500 words total)
-- `docs/research/foundry-ui.md` (~1,900 words, 19 sources) — layout, palette, type, components, motion, density. Confirms our locked tokens are on-spec, slightly cooler-blue (Anduril/Maven-leaning, good).
-- `docs/research/dispatch-domain.md` (~2,400 words, 22 sources) — NFIRS taxonomy, NERIS replacement note (Jan 2026), unit FSM with 10-codes, NFPA 1710 thresholds, real call-pacing data, 10 design recommendations.
-- `docs/research/game-references.md` (~2,150 words, 18 sources) — 6 games triangulated. Door Kickers 2's NATO-overlay aesthetic + This Is the Police's narrative ambition + Global Rescue's real-OSM = our wedge. Open-seat thesis defended.
-- `docs/research/osm-data.md` (~2,100 words, 22 sources) — OpenFreeMap Liberty + MapLibre + deck.gl + turf-A* for v0.1; PMTiles slice for v0.2 independence. 10-step Day-2 checklist.
-- `docs/research/narrative-shift-design.md` (~3,050 words) — RPG fronts/clocks → game shifts. 9-1-1 + Third Watch as TV reference, not The Wire. 8 threadable items. Copy-paste shift-DM prompt scaffold + 30-shift seed plan.
+## Done — Day 0 → Day 7
 
-### Tooling
-- 7-role agent layout under `agents/{producer,researcher,designer,impl-map,impl-ui,qa,reviewer}/`.
-- New `/dispatchaudit` skill at `~/.claude/skills/dispatchaudit/SKILL.md`.
-- 3 GitHub Actions workflows: `ci.yml`, `tauri.yml`, `dispatchaudit.yml`.
-- Studio-OS registered (`~/.operator/studio/studio.toml`); `scripts/emit-status.mjs` lives.
-- `docs/CLAUDE_DESIGN_PROMPTS.md` — pre-built prompts for claude.ai/design (6 panels + iteration prompts).
-- Project memory saved (`project_operator-sim.md`, `reference_claude_design.md`, MEMORY.md updated).
+| Day | What shipped | Tests | Commit |
+|-----|--------------|-------|--------|
+| 0 | Repo scaffold · Vite/React/Tailwind/Tauri · Palantir tokens · CI workflows · 5 research dossiers | 5 | (Day 0 chain) |
+| 1 | Zod ontology · MapLibre live · Overpass scrape script · validate-shifts.mjs · zustand floor store | 5 | (rolled into Day 0) |
+| 2 | Baked OSM data · LeftRail wired · RightRail dossier · CommandPalette skeleton | 5 | (early Day 2) |
+| 3 | Road graph + Dijkstra + walkAlong · dispatch FSM · tick loop @ 4 real-sec/game-min · PathLayer | 13 | (Day 3 commit) |
+| 4 | Selection history (browser-style nav) · clickable map units/incidents · richer dossiers | 22 | (Day 4 commit) |
+| 5 | Verb registry + typed slots · Tab-completion · context-aware suggestions · 8 verbs | 45 | `91667c6` |
+| 6 | First real shift YAML · Zod-validated loader · spawn timeline · win/loss summary modal | 58 | `d4d228a` |
+| 7 | Live Shift HUD · defensive loadShift · 7 edge-case tests · STATUS rewrite · touchpoint #1 | **65** | (this commit) |
 
-### Discord
-- Kickoff posted to `#claude-chat`.
-- Day 0 checkpoint posted with repo URL.
-- Final report posted on autonomous-run wrap.
+## 65/65 tests · `tsc --noEmit` clean · `vite build` 13s · 1.86 MB / 531 KB gzipped
 
-## Day 1 (when Kruz wakes / picks back up)
+| Test file | Tests | Covers |
+|-----------|-------|--------|
+| `src/sim/shift.test.ts` | **20** | YAML parse, spawn timeline (no-op / fires at due / idempotent / address-miss / case-insensitive / high-speed jump / boundary), outcome scoring (S/A/B/C/D, late_by, boundary, cancelled, on-scene-at-end, B-grade boundary, defensive loadShift) |
+| `src/sim/verbs.test.ts` | 23 | parser, suggestForInput, applySuggestion, executeInput |
+| `src/state/nav.test.ts` | 9 | back/forward stacks |
+| `src/sim/dispatch.test.ts` | 4 | full FSM cycle on synthetic graph |
+| `src/sim/pathfinding.test.ts` | 4 | Dijkstra + walkAlong |
+| `src/lib/schemas.test.ts` | 5 | Zod ontology |
 
-The Researcher dossiers are done — Day 1's "research phase" is shipped a day early. Day 1 collapses into:
+## What lives on disk
 
-- Designer: digest dossiers, write `agents/designer/prompts/shift-dm.md` from the scaffold in `narrative-shift-design.md`. Generate first 5 seed shifts. Run `npm run validate:shifts`.
-- Implementer A: run `npm run scrape:overpass` once for QC. Wire baked data into `useFloor` stores. Make MapLibre dark-restyle work.
-- Implementer B: wire LeftRail to count from `useFloor.units / incidents / etc`. Real entity-row click → `floor.select(...)` → RightRail dossier reads from `getEntity(...)`.
-- QA: `/webexplore smoke` against the dev server.
+- **Roster** (`src/state/seed.ts`) — Davenport Central station, 3 units (E1, M2, 234), 4 personnel.
+- **Shift** (`data/shifts/qc_tier1_001.yaml`) — 12 game-min, 5 incidents (false alarm → diabetic → MVA → cardiac → tree on road). Validator-clean. Bundled at build time via Vite `?raw`.
+- **Map data** (`public/data/quad_cities/{roads.geojson,buildings.geojson,addresses.json}`) — 43 baked addresses, road graph for downtown Davenport.
 
-## Day 2-7
+## Open touchpoint — #1, "Does it feel like Operator Sim?"
 
-Per `docs/GDD.md` § 9. Day 2 = OSM tiles + 1 unit moves on real roads. Day 7 = Tier-1 fully playable + Discord touchpoint #1.
+Producer should answer:
 
-## Open questions for Kruz
+1. **Pacing** — does Tier 1 at 1× speed feel deliberate or boring? At 4× speed do you lose track?
+2. **The Shift HUD** (`ShiftHUD.tsx` in TopStrip) — does the 5-block spawn meter + on-time counter + draining time bar give you a useful read on the shift?
+3. **End-of-shift summary** — is the grade chip (S/A/B/C/D) + per-incident table the right resolution at this stage, or do we need a debrief screen?
+4. **Palette discoverability** — Ctrl+K reveals everything, but a brand-new player wouldn't know that. Do we need an opening tutorial pop-up, or is "Ctrl+K" in the BottomTicker enough?
+5. **Should Tier 1 introduce all 5 incident types (alarm / med-general / MVA / cardiac / service)?** — or front-load with one type so the player learns the loop before variety lands?
 
-1. **Title.** Operator Sim placeholder OK, or rename now? Easy to rename — `gh repo rename` + commit.
-2. **Firecrawl API key.** Researcher worked from cached knowledge today. Future research passes (Steam-page screenshot scraping, deeper Foundry references) would benefit from a real key. Get one at https://firecrawl.dev (free tier).
-3. **Cities.** Default = Quad Cities. Want a 2nd-city pre-bake (Iowa City? someplace bigger like Chicago for ambition?) or stay focused on QC for v0.1?
+## Day 8+ (Phase 2 — variety)
+
+Per `docs/GDD.md` § 11.2, "playable Tier 1" is now done. Phase 2 introduces:
+- **2nd shift** at Tier 2 difficulty (denser pacing, harder address mix)
+- **Multi-unit incidents** (`expected_units` becomes load-bearing — engine + ambulance for MVAs)
+- **Police agency** (`patrol`, `k9`, dispatch routing by agency)
+- **Map quadrant tile-and-merge** (Overpass scrape full QC bbox)
+- **Save/replay verbs** (palette → `save shift_qc_001`, `replay shift_qc_001`)
 
 ## Touchpoint budget
 
 | # | When | Question | Status |
-|---|---|---|---|
-| 1 | End Wk1 | Does it feel like Operator Sim? | unspent |
+|---|------|----------|--------|
+| 1 | End Wk1 | Does it feel like Operator Sim? | **OPEN** — Day 7 ship is the touchpoint |
 | 2 | Mid Wk2 | Mid-week feel check | unspent |
 | 3 | End Wk3 | hi-fi mockup review | unspent |
 | 4 | End Wk4 | ship or extend? | unspent |

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useFloor } from "@/state/useFloor";
+import { ShiftHUD } from "./ShiftHUD";
 
 function useClock() {
   const [now, setNow] = useState(() => new Date());
@@ -59,14 +60,15 @@ export function TopStrip() {
 
   return (
     <header className="h-14 border-b border-border-subtle bg-bg-panel flex items-center px-4 gap-6 select-none">
-      <div className="flex items-center gap-3">
-        <div className="w-2 h-2 rounded-full bg-accent-emerald animate-pulse" />
-        <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-fg-dim">
+      <div className="flex items-center gap-3 min-w-0">
+        <div className="w-2 h-2 rounded-full bg-accent-emerald animate-pulse shrink-0" />
+        <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-fg-dim shrink-0">
           Operator Sim
         </div>
-        <div className="font-sans text-[13px] text-fg-base">
+        <div className="font-sans text-[13px] text-fg-base shrink-0">
           Quad Cities · Sector 1
         </div>
+        <ShiftHUD />
       </div>
 
       <div className="ml-auto flex items-center gap-3">

@@ -215,12 +215,16 @@ export const useFloor = create<FloorState>()(
     },
 
     loadShift(shift) {
+      // Defensive: arming a shift always resets the wall clock and unpauses.
+      // Caller can pause again immediately if they want to brief the player.
       set({
         shift,
         shift_id: shift.id,
         shift_status: "running",
         incidents_spawned: new Set(),
         shift_outcome: null,
+        game_min: 0,
+        paused: false,
       });
     },
     markIncidentSpawned(shift_incident_id) {

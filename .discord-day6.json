@@ -1,0 +1,52 @@
+{
+  "username": "Operator Sim Build",
+  "embeds": [
+    {
+      "title": "Day 6 shipped — Tier 1 is fully playable end-to-end",
+      "url": "https://github.com/kjhholt-alt/operator-sim/commit/d4d228a",
+      "description": "First real shift loads from `data/shifts/qc_tier1_001.yaml`, Zod-parsed at boot. 5 incidents spawn into the live queue at scheduled game-min. Dispatch from the palette, watch them resolve on real OSM roads. At T+12.0 the win/loss modal lands with an S/A/B/C/D grade and a per-incident table. ~48 real seconds at 1× speed.",
+      "color": 4185983,
+      "fields": [
+        {"name": "Commit", "value": "[`d4d228a`](https://github.com/kjhholt-alt/operator-sim/commit/d4d228a)", "inline": true},
+        {"name": "Build", "value": "tsc clean · 58/58 tests · vite 17s · 531 KB gz", "inline": true},
+        {"name": "Phase 1 progress", "value": "Day 0–5 ✅ · **Day 6 ✅** · Day 7 next (bug bash + first Producer touchpoint)", "inline": false},
+        {
+          "name": "First shift on disk",
+          "value": "`data/shifts/qc_tier1_001.yaml` — 12 game-min, 5 incidents (false alarm → diabetic → MVA → cardiac → tree on road). Designed as a relaxed introduction at 1× speed. CI validator (`npm run validate:shifts`) green.",
+          "inline": false
+        },
+        {
+          "name": "Shift loader · src/sim/shift.ts",
+          "value": "`parseShift(yaml)` → Zod-validated `Shift`. `spawnDueIncidents()` is pure: returns the incidents whose `spawn_time_game_min` has been reached and aren't yet in the live queue. Address resolution is case-insensitive trimmed-street match against the baked Address Map.",
+          "inline": false
+        },
+        {
+          "name": "Tick loop integration",
+          "value": "After Phase-3 FSM and before `setState`, the loop advances the spawn timeline (incidents flow into the queue) and checks end-of-shift. One commit per frame. `incidents_spawned: Set<string>` makes the spawn step idempotent.",
+          "inline": false
+        },
+        {
+          "name": "Outcome scoring",
+          "value": "`computeOutcome(shift, liveIncidents)` classifies each incident as `resolved_in_window` (1.0), `resolved_late` (0.5), `missed` (0.0), or `cancelled` (0.0). Score → grade: **S** ≥0.95, **A** ≥0.85, **B** ≥0.70, **C** ≥0.50, **D** <0.50.",
+          "inline": false
+        },
+        {
+          "name": "ShiftSummary modal",
+          "value": "Lands when `shift_status === \"complete\"`. Big grade chip (emerald S/A · amber B/C · crimson D) + four-stat block + per-incident table (Spawn / Due / Resolved / Outcome). Esc or click-outside dismisses; world stays paused.",
+          "inline": false
+        },
+        {
+          "name": "Tests",
+          "value": "**58/58 pass.** Day 6 added 13: Zod parser (shipped YAML, default severity, reject empty incidents); spawn-timeline (no-op before due, fires at due, idempotent on already-spawned, address-miss FAIL, case-insensitive match); outcome (S=all on-time, D=nothing resolved, C=all late→0.5, late_by math).",
+          "inline": false
+        },
+        {
+          "name": "Day 7 next",
+          "value": "Bug bash + Producer touchpoint #1. Watch a full shift play through, hunt the soft edges (selection desync after spawn, route-glitches on tight turns, summary grade math against pathological ties), capture a 60-sec recording for review.",
+          "inline": false
+        }
+      ],
+      "footer": {"text": "Operator Sim · Day 6 · master @ d4d228a"}
+    }
+  ]
+}
