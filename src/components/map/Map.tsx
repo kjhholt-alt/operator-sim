@@ -10,10 +10,10 @@ import { useEffect, useMemo, useRef } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { MapboxOverlay } from "@deck.gl/mapbox";
-import { ScatterplotLayer } from "@deck.gl/layers";
+import { ScatterplotLayer, PathLayer } from "@deck.gl/layers";
 import { useFloor } from "@/state/useFloor";
 import { applyDarkStyle, DARK_TOKENS } from "@/lib/mapStyle";
-import type { Unit, Incident, UnitStatus } from "@/lib/schemas";
+import type { Unit, Incident, UnitStatus, Coord } from "@/lib/schemas";
 
 const STYLE_URL = "https://tiles.openfreemap.org/styles/liberty";
 
@@ -25,6 +25,40 @@ const UNIT_COLOR: Record<UnitStatus, [number, number, number]> = {
   returning: [101, 122, 150], // dim
   out_of_service: [101, 122, 150],
 };
+
+interface ActiveRoute {
+  id: string;
+  callsign: string;
+  status: UnitStatus;
+  path: Coord[];
+}
+
+function buildRouteLayer(units: Unit[]) {
+  const data: ActiveRoute[] = [];
+  for (const u of units) {
+    if (!u.current_route || u.current_route.length < 2) continue;
+    if (u.status !== "en_route" && u.status !== "returning") continue;
+    data.push({
+      id: u.id,
+      callsign: u.callsign,
+      status: u.status,
+      path: u.current_route,
+    });
+  }
+  return new PathLayer<ActiveRoute>({
+    id: "routes",
+    data,
+    getPath: (d) => d.path,
+    getColor: (d) =>
+      d.status === "returning" ? [101, 122, 150, 200] : [240, 184, 90, 230],
+    getWidth: 3,
+    widthUnits: "pixels",
+    widthMinPixels: 2,
+    capRounded: true,
+    jointRounded: true,
+    pickable: false,
+  });
+}
 
 function buildUnitLayer(units: Unit[]) {
   return new ScatterplotLayer<Unit>({
@@ -144,10 +178,12 @@ export function OperatorMap() {
   useEffect(() => {
     const overlay = overlayRef.current;
     if (!overlay) return;
+    const unitArr = Array.from(units.values());
     overlay.setProps({
       layers: [
         buildIncidentLayer(Array.from(incidents.values()), addressLookup),
-        buildUnitLayer(Array.from(units.values())),
+        buildRouteLayer(unitArr),
+        buildUnitLayer(unitArr),
       ],
     });
   }, [units, incidents, addressLookup]);

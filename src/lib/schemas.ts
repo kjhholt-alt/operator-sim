@@ -171,6 +171,12 @@ export const Unit = z.object({
   status_since_game_min: GameMin,
   current_position: Coord,
   current_route: z.array(Coord).optional(),
+  // Distance traveled along current_route (meters). `along` polyline progress.
+  route_progress_m: z.number().nonnegative().optional(),
+  route_total_m: z.number().nonnegative().optional(),
+  // FSM scratchpad: where the unit is heading and what it's expected to do on arrival.
+  destination_coord: Coord.optional(),
+  on_arrival: z.enum(["on_scene", "available"]).optional(),
   current_incident_id: z.string().optional(),
   crew: z.array(z.string()).max(8), // Personnel IDs
 });

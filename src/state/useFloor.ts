@@ -22,6 +22,7 @@ import type {
   Unit,
   Vehicle,
 } from "@/lib/schemas";
+import type { RoadGraph } from "@/sim/roadGraph";
 
 export type SimSpeed = 0 | 0.5 | 1 | 2 | 4;
 
@@ -56,6 +57,9 @@ export interface FloorState {
   selection: Selection | null;
   camera: Camera;
 
+  // ── world geometry ──
+  road_graph: RoadGraph | null;
+
   // ── meta ──
   last_event_log: Array<{ ts: number; game_min: number; text: string }>;
 
@@ -65,6 +69,7 @@ export interface FloorState {
   togglePause: () => void;
   select: (sel: Selection | null) => void;
   setCamera: (c: Partial<Camera>) => void;
+  setRoadGraph: (g: RoadGraph | null) => void;
   upsertUnit: (u: Unit) => void;
   upsertIncident: (i: Incident) => void;
   logEvent: (text: string) => void;
@@ -94,6 +99,8 @@ export const useFloor = create<FloorState>()(
     selection: null,
     camera: { center: QC_CENTER, zoom: 12 },
 
+    road_graph: null,
+
     last_event_log: [],
 
     tick(delta_game_min) {
@@ -111,6 +118,9 @@ export const useFloor = create<FloorState>()(
     },
     setCamera(c) {
       set((s) => ({ camera: { ...s.camera, ...c } }));
+    },
+    setRoadGraph(g) {
+      set({ road_graph: g });
     },
     upsertUnit(u) {
       set((s) => {

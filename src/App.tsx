@@ -6,13 +6,18 @@ import { RightRail } from "@/components/shell/RightRail";
 import { BottomTicker } from "@/components/shell/BottomTicker";
 import { CommandPalette } from "@/components/shell/CommandPalette";
 import { bootFloor } from "@/state/seed";
+import { startTickLoop, stopTickLoop } from "@/sim/tick";
 
 function App() {
   const [paletteOpen, setPaletteOpen] = useState(false);
 
   // Boot-time seed: load addresses + demo entities so the floor is populated.
+  // Then start the wall-clock tick loop so units actually move.
   useEffect(() => {
-    bootFloor().catch((err) => console.error("[App] bootFloor failed", err));
+    bootFloor()
+      .then(() => startTickLoop())
+      .catch((err) => console.error("[App] bootFloor failed", err));
+    return () => stopTickLoop();
   }, []);
 
   useEffect(() => {

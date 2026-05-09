@@ -11,6 +11,7 @@
 
 import type { Address, Incident, Station, Unit, Vehicle, Personnel } from "@/lib/schemas";
 import { useFloor } from "./useFloor";
+import { loadRoadGraph } from "@/sim/roadGraph";
 
 const QC_CENTER: [number, number] = [-90.5776, 41.5236];
 
@@ -51,7 +52,10 @@ function pickFirstReal<T>(arr: T[], n: number): T[] {
 }
 
 export async function bootFloor(city = "quad_cities") {
-  const addresses = await loadAddresses(city);
+  const [addresses, roadGraph] = await Promise.all([
+    loadAddresses(city),
+    loadRoadGraph(`${import.meta.env.BASE_URL}data/${city}/roads.geojson`),
+  ]);
 
   // 1 station @ QC center (Davenport core).
   const station: Station = {
@@ -142,9 +146,13 @@ export async function bootFloor(city = "quad_cities") {
     personnel: new Map(personnel.map((p) => [p.id, p])),
     units: new Map(units.map((u) => [u.id, u])),
     incidents: new Map(incident ? [[incident.id, incident]] : []),
+    road_graph: roadGraph,
   });
 
+  const graphSummary = roadGraph
+    ? `${roadGraph.nodes.size} nodes`
+    : "no road graph";
   f.logEvent(
-    `boot — ${addresses.length} addresses, ${units.length} units, ${incident ? 1 : 0} incident`,
+    `boot — ${addresses.length} addresses, ${units.length} units, ${incident ? 1 : 0} incident, ${graphSummary}`,
   );
 }
