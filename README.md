@@ -1,9 +1,10 @@
-# Watchfloor
+# Operator Sim
 
 > Foundry-grade dispatch sim. Real-OSM map. Command fire / EMS / police / SWAT.
 > 911 Operator pacing. Door Kickers tactical depth. Palantir Maven aesthetic.
 
-**Status:** Day 0 — bootstrap. Vertical slice targeted week 4.
+**Status:** Day 0 — bootstrap. Vertical slice targeted **week 4** (early June 2026).
+**End-of-year goal:** Steam Early Access launch by **2026-12-31**. See [`docs/GDD.md`](docs/GDD.md) § 11 for the 8-phase roadmap.
 
 ## What this is
 
@@ -52,6 +53,6 @@ src-tauri/           — Rust backend
 
 ## The autonomous build pipeline
 
-This game is being built ~95% by Claude across a 4-week sprint. See [`docs/GDD.md`](docs/GDD.md) and [`agents/`](agents/) for the role breakdown. Touchpoints arrive via Discord `#claude-chat` as A/B questions.
+This game is being built ~95% by Claude across an 8-month run (May 2026 → Dec 2026 EA). See [`docs/GDD.md`](docs/GDD.md) and [`agents/`](agents/) for the role breakdown. Touchpoints arrive via Discord `#claude-chat` as A/B questions.
 
-Built in the Watchfloor of [@kjhholt-alt](https://github.com/kjhholt-alt).
+Built in the operator's chair by [@kjhholt-alt](https://github.com/kjhholt-alt).

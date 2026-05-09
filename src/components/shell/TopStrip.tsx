@@ -33,7 +33,7 @@ export function TopStrip() {
       <div className="flex items-center gap-3">
         <div className="w-2 h-2 rounded-full bg-accent-emerald animate-pulse" />
         <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-fg-dim">
-          Watchfloor
+          Operator Sim
         </div>
         <div className="font-sans text-[13px] text-fg-base">
           Quad Cities · Sector 1

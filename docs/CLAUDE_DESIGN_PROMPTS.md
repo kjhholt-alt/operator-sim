@@ -1,4 +1,4 @@
-# Claude.ai/design Prompt Library — Watchfloor
+# Claude.ai/design Prompt Library — Operator Sim
 
 > **For:** `https://claude.ai/design` (Anthropic Labs visual designer, Opus 4.7).
 > **Pattern:** copy-paste a section, optionally add `[REFINE: <change>]` to iterate.
@@ -9,7 +9,7 @@
 ## Universal preamble (always paste first)
 
 ```
-Design context: Watchfloor — a Foundry-grade dispatch sim built in Vite + React + Tailwind 4.
+Design context: Operator Sim — a Foundry-grade dispatch sim built in Vite + React + Tailwind 4.
 The aesthetic reference is Palantir Foundry / Maven Smart System. NOT a tycoon game UI. NOT a SaaS dashboard.
 Think 24/7 watch floor at a Joint Operations Center. Dense, terminal-grade typography, fixed viewport, no scrolling in main panels.
 

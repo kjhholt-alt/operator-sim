@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
- * Watchfloor — Shift YAML validator.
+ * Operator Sim — Shift YAML validator.
  *
  * Standalone shape checker. Full Zod validation happens at runtime in the app
  * (src/lib/schemas.ts). This script is the CI sanity gate — duplicates the

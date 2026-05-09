@@ -5,7 +5,7 @@ sources: 22
 written: 2026-05-09
 ---
 
-# Watchfloor — OSM data sources dossier
+# Operator Sim — OSM data sources dossier
 
 Target area: Quad Cities (Davenport IA, Bettendorf IA, Moline IL, Rock Island IL).
 Bounding box: `-90.7, 41.4, -90.4, 41.7` (~30 km × 30 km, ~900 km² land+water).
@@ -50,7 +50,7 @@ Overpass is the read-only query language layered on a mirror of the OSM planet D
   - `overpass-api.de` — primary, German hosted, generally reliable. ([overpass-api.de](https://overpass-api.de/))
   - `overpass.kumi.systems` — backup mirror, often less loaded.
   - `lz4.overpass-api.de` — compressed, faster on small queries.
-- **Rate limits:** ~2 concurrent slots per IP, 10k elements/request soft cap, 180s wall-clock timeout. Server returns `429` and `Retry-After` headers. **Honor them.** Best practice: tag requests with `User-Agent: watchfloor/0.1 (kjh.holt@gmail.com)` so the maintainer can email us before banning.
+- **Rate limits:** ~2 concurrent slots per IP, 10k elements/request soft cap, 180s wall-clock timeout. Server returns `429` and `Retry-After` headers. **Honor them.** Best practice: tag requests with `User-Agent: operator-sim/0.1 (kjh.holt@gmail.com)` so the maintainer can email us before banning.
 - **Self-hosting** is possible via Docker (`mediagis/openstreetmap-tiles`) but unnecessary at our scale.
 
 ### Three queries we need
@@ -99,7 +99,7 @@ OSM building coverage in mid-sized US Midwest cities is **uneven**. Davenport's 
 
 **Fallback:** [Microsoft Open Building Footprints](https://github.com/microsoft/USBuildingFootprints) (ODbL-compatible since 2018, contributed back to OSM where coverage is missing). State-by-state GeoJSON; download the IL + IA files, clip to bbox in QGIS or `mapshaper`, merge with OSM as supplemental layer. Use a dimmer style for "synthetic" footprints so we know which are OSM-tagged (and therefore can have OSM addresses, names, types) vs ML-detected.
 
-**For Watchfloor's purposes, OSM-only is fine for v0.1.** Stations get placed on tagged OSM buildings; if a player wants to plop a station on an unmapped block we generate a synthetic address. We are not running an emergency-services product, we are running a sim.
+**For Operator Sim's purposes, OSM-only is fine for v0.1.** Stations get placed on tagged OSM buildings; if a player wants to plop a station on an unmapped block we generate a synthetic address. We are not running an emergency-services product, we are running a sim.
 
 ---
 
@@ -172,7 +172,7 @@ deck.gl 9.x is the right viz overlay for our entity layers. It composes onto Map
 
 1. **`npm install maplibre-gl @deck.gl/core @deck.gl/layers @deck.gl/mapbox @turf/turf`**. Pin MapLibre to ^4.7. (Skip `@deck.gl/react` unless you hit React-fiber issues — vanilla `MapboxOverlay` is leaner.)
 2. **Render OpenFreeMap Liberty** at center `[-90.55, 41.55]`, zoom 11, with `style: 'https://tiles.openfreemap.org/styles/liberty'`. Confirm dark-mode by overriding `background.background-color` to `#0a0e14` and water/road colors to Foundry palette. Spend ≤2 hours on style polish; defer to Week 3 design pass.
-3. **Run the three Overpass queries** above against `overpass-api.de` with `User-Agent: watchfloor/0.1 (kjh.holt@gmail.com)`. Save raw outputs to `scripts/scrape/raw/`. Don't commit raw — it's 30+ MB; commit only baked artifacts.
+3. **Run the three Overpass queries** above against `overpass-api.de` with `User-Agent: operator-sim/0.1 (kjh.holt@gmail.com)`. Save raw outputs to `scripts/scrape/raw/`. Don't commit raw — it's 30+ MB; commit only baked artifacts.
 4. **Bake derived artifacts** into `public/data/`:
    - `qc-buildings.geojson` (post-clip, ~5-10 MB)
    - `qc-addresses.json` (OSM ∪ OpenAddresses ∪ TIGER, deduped, ~2-5 MB)

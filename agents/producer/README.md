@@ -28,7 +28,7 @@ You're the orchestrator. You don't write code. You schedule, observe, and decide
 
 ## Output format — daily Discord briefing
 
-Embed title: `Watchfloor — Day N · <phase>`
+Embed title: `Operator Sim — Day N · <phase>`
 Description (≤200 words):
 - **Yesterday:** 1-2 lines
 - **Today:** 1-2 lines

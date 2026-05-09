@@ -1,5 +1,5 @@
 /**
- * Watchfloor — main zustand store ("the floor").
+ * Operator Sim — main zustand store ("the floor").
  *
  * Holds the working set: live entities, selection, time, camera, command queue.
  * All mutations go through actions on this store. Direct state.x = y is forbidden.

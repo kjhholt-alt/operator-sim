@@ -1,5 +1,5 @@
 /**
- * Watchfloor — MapLibre + deck.gl host.
+ * Operator Sim — MapLibre + deck.gl host.
  *
  * Day 2 starter. Boots OpenFreeMap Liberty tiles restyled dark, places a
  * single demo unit dot at the QC center. Implementer A wires real entities

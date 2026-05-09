@@ -1,11 +1,11 @@
 ---
-summary: Palantir Foundry / Maven / Gotham share a restrained, near-monochrome, dense desktop aesthetic — left rail of entities, center workspace (map or graph), right dossier, with Blueprint design system colors and an F-shape information hierarchy. Watchfloor should mirror these patterns at the layout, color, typography, and motion levels rather than copy individual screens.
+summary: Palantir Foundry / Maven / Gotham share a restrained, near-monochrome, dense desktop aesthetic — left rail of entities, center workspace (map or graph), right dossier, with Blueprint design system colors and an F-shape information hierarchy. Operator Sim should mirror these patterns at the layout, color, typography, and motion levels rather than copy individual screens.
 actionable_for: [implementer-b, designer]
 sources: 19
 written: 2026-05-09
 ---
 
-# Foundry-grade UI dossier — for Watchfloor
+# Foundry-grade UI dossier — for Operator Sim
 
 ## 1. Layout grid
 
@@ -39,7 +39,7 @@ Pulled directly from `palantir/blueprint/packages/colors/src/colors.ts` [(Bluepr
 | `DARK_GRAY4` | `#383E47` | Border bright |
 | `DARK_GRAY5` | `#404854` | Highest-elevation surface |
 | `GRAY1`-`GRAY5` | `#5F6B7C` → `#C5CBD3` | Mute → bright foreground |
-| `LIGHT_GRAY1`-`LIGHT_GRAY5` | `#D3D8DE` → `#F6F7F9` | Light-mode surfaces (irrelevant to Watchfloor) |
+| `LIGHT_GRAY1`-`LIGHT_GRAY5` | `#D3D8DE` → `#F6F7F9` | Light-mode surfaces (irrelevant to Operator Sim) |
 
 ### Blueprint accent colors (use sparingly)
 Each accent has 5 tints (1=darkest, 5=lightest). The middle tint (3) is the canonical hover/active.
@@ -56,10 +56,10 @@ Each accent has 5 tints (1=darkest, 5=lightest). The middle tint (3) is the cano
 
 The Palantir Workshop "Used Colors" feature lets builders save semantic palettes per app and swap them per light/dark mode [(Workshop used colors)](https://www.palantir.com/docs/foundry/workshop/used-colors) — i.e. the platform itself enforces tokens, not raw hex.
 
-### Watchfloor mapping (already locked at `src/index.css`)
-Watchfloor's tokens are a tighter, slightly cooler-blue variant of Blueprint dark:
+### Operator Sim mapping (already locked at `src/index.css`)
+Operator Sim's tokens are a tighter, slightly cooler-blue variant of Blueprint dark:
 
-| Watchfloor token | Watchfloor hex | Closest Blueprint analog |
+| Operator Sim token | Operator Sim hex | Closest Blueprint analog |
 |---|---|---|
 | `--color-bg-base` `#080b12` | deeper than `BLACK #111418` |
 | `--color-bg-panel` `#0d111c` | between `BLACK` and `DARK_GRAY1` |
@@ -70,12 +70,12 @@ Watchfloor's tokens are a tighter, slightly cooler-blue variant of Blueprint dar
 | `--color-accent-crimson` `#ec5b6b` | between `RED4 #E76A6E` and `ROSE4 #F5498B` |
 | `--color-accent-violet` `#a07aff` | between `INDIGO4 #9881F3` and `VIOLET5 #D69FD6` |
 
-Verdict: **Watchfloor is on-spec.** The cyan-leaning palette tracks closer to Anduril/Maven map UIs than to default Foundry-blue.
+Verdict: **Operator Sim is on-spec.** The cyan-leaning palette tracks closer to Anduril/Maven map UIs than to default Foundry-blue.
 
 ## 3. Typography
 
 ### Font choice
-Blueprint defaults to a system stack: `-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Cantarell, Open Sans, Helvetica Neue, sans-serif` — i.e. neutral grotesque, no brand font. The Palantir wordmark itself "resembles a custom or modified geometric grotesque, similar in structure to Neue Haas Grotesk" [(DesignYourWay)](https://www.designyourway.net/blog/palantir-logo/). Bloomberg by contrast commissioned a bespoke Matthew Carter font with finance glyphs (1/64th fractions) [(Bloomberg LP)](https://www.bloomberg.com/company/stories/how-bloomberg-terminal-ux-designers-conceal-complexity/) — Watchfloor uses IBM Plex Sans + JetBrains Mono, which sits in the same neutral-grotesque + functional-mono space.
+Blueprint defaults to a system stack: `-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen, Ubuntu, Cantarell, Open Sans, Helvetica Neue, sans-serif` — i.e. neutral grotesque, no brand font. The Palantir wordmark itself "resembles a custom or modified geometric grotesque, similar in structure to Neue Haas Grotesk" [(DesignYourWay)](https://www.designyourway.net/blog/palantir-logo/). Bloomberg by contrast commissioned a bespoke Matthew Carter font with finance glyphs (1/64th fractions) [(Bloomberg LP)](https://www.bloomberg.com/company/stories/how-bloomberg-terminal-ux-designers-conceal-complexity/) — Operator Sim uses IBM Plex Sans + JetBrains Mono, which sits in the same neutral-grotesque + functional-mono space.
 
 ### Heading scale (from Blueprint `_typography.scss` [(source)](https://github.com/palantir/blueprint/blob/develop/packages/core/src/_typography.scss))
 
@@ -88,7 +88,7 @@ Blueprint defaults to a system stack: `-apple-system, BlinkMacSystemFont, Segoe 
 | H5 | 16px / 19px |
 | H6 | 14px / 16px |
 
-Body text: 14px Blueprint default. Watchfloor runs at 13px which is slightly denser — fine.
+Body text: 14px Blueprint default. Operator Sim runs at 13px which is slightly denser — fine.
 
 ### Mono vs sans rule
 Bloomberg lesson: "Bloomberg expresses information 'in your face' using high contrast colors… speed, dense information display, reliability" [(Bloomberg LP)](https://www.bloomberg.com/company/stories/how-bloomberg-terminal-ux-designers-conceal-complexity/). The discipline:
@@ -109,7 +109,7 @@ The recurring Foundry/Maven/Gotham/Lattice components, ranked by how essential t
 7. **Tabular table** — striped rows are out; instead use 1px subtle borders. Right-align numeric columns. First column locks on horizontal scroll. No vertical column borders.
 8. **Status dot + badge** — 4px dot for inline rows, 6-8px for dossier headers. Badge variants: live (cyan, possibly pulsing), success (emerald), warn (amber), critical (crimson), inferred (violet outline only). Avoid filled gray badges — use mute text instead.
 9. **Timeline strip** — bottom-pinned, time-scrubbable. Gotham: "Timeline panel that facilitates information comparison across different time points" [(Gotham platform)](https://www.palantir.com/platforms/gotham). Marks: thin vertical ticks at events, hover for detail popover.
-10. **Histogram tool** — Gotham: "a chart that looks like a web and makes connections between things… correlations and trends" [(Vice / Palantir manual leak)](https://www.vice.com/en/article/revealed-this-is-palantirs-top-secret-user-manual-for-cops/). Watchfloor variant: a frequency-band view of incident types over time.
+10. **Histogram tool** — Gotham: "a chart that looks like a web and makes connections between things… correlations and trends" [(Vice / Palantir manual leak)](https://www.vice.com/en/article/revealed-this-is-palantirs-top-secret-user-manual-for-cops/). Operator Sim variant: a frequency-band view of incident types over time.
 11. **Kanban / process columns** — Maven uses these explicitly. From the AIPCon demo description: "a literal Kanban board — like a task tracker, but with vertical columns representing the different processes" [(Spatial Intelligence)](https://www.spatialintelligence.ai/p/inside-palantirs-maven-smart-system).
 12. **Toast / snackbar** — top or bottom-pinned, monochrome surface with single accent stripe (cyan, amber, crimson). 4-6 second auto-dismiss. No drop shadow — use border + slight elevation tone.
 
@@ -128,11 +128,11 @@ Restraint is the rule. Foundry's design philosophy emphasizes precision over per
 
 What "dense" actually means, calibrated:
 
-- **Datapoints visible above the fold**: Palantir Workshop says ≤10 components per view [(best practices)](https://www.palantir.com/docs/foundry/workshop/application-design-best-practices), but each component can hold 10-30 data fields. Realistic Foundry dashboard: **40-80 datapoints visible without scrolling** (KPI strip 6 metrics × 3 fields each = 18, entity list 12 rows × 3 fields = 36, dossier card 8 attributes = 8, total ~62). Bloomberg pushes to 200+; that's the upper bound and not Watchfloor's target.
+- **Datapoints visible above the fold**: Palantir Workshop says ≤10 components per view [(best practices)](https://www.palantir.com/docs/foundry/workshop/application-design-best-practices), but each component can hold 10-30 data fields. Realistic Foundry dashboard: **40-80 datapoints visible without scrolling** (KPI strip 6 metrics × 3 fields each = 18, entity list 12 rows × 3 fields = 36, dossier card 8 attributes = 8, total ~62). Bloomberg pushes to 200+; that's the upper bound and not Operator Sim's target.
 - **F-shape reading**: top strip first (status), then left rail (browse), then center (work), then right (detail). [(Foundry best practices)](https://www.palantir.com/docs/foundry/workshop/application-design-best-practices)
 - **Whitespace 30-40%**, applied as 8-16px gutters, not center-of-card padding.
 - **No more than 5 primary actions per view.** [(same source)](https://www.palantir.com/docs/foundry/workshop/application-design-best-practices)
-- **Spacing scale**: Workshop "Compact padding" = 80% height/width with 16px spacing as the base. Watchfloor should run on a 4 / 8 / 12 / 16 / 24 grid.
+- **Spacing scale**: Workshop "Compact padding" = 80% height/width with 16px spacing as the base. Operator Sim should run on a 4 / 8 / 12 / 16 / 24 grid.
 
 ## 7. What they avoid
 
@@ -157,11 +157,11 @@ Maven Smart System (MSS) layers on top of the Foundry/Gotham vocabulary but adds
 - **Stable identifier numbers follow targets across modalities.** A detection picked up on satellite, then drone, then SIGINT carries the same ID. UI implication: every entity has a stable mono-formatted ID badge that's globally searchable [(Spatial Intelligence)](https://www.spatialintelligence.ai/p/inside-palantirs-maven-smart-system).
 - **Dot density on map.** "At ground-level resolution, the map populates with dots from computer vision detections" [(Spatial Intelligence)](https://www.spatialintelligence.ai/p/inside-palantirs-maven-smart-system). Dots are tiny (3-4px), colored by classification (red = hostile, etc.), aggregating into clusters at lower zoom.
 - **Course-of-action / Kanban columns.** "Vertical columns representing the different processes" — i.e. a workflow Kanban exists *alongside* the map, not behind a tab. Users move detections through identification → COA → action [(Spatial Intelligence)](https://www.spatialintelligence.ai/p/inside-palantirs-maven-smart-system).
-- **Three-click action.** "Left click, right click, left click. Magically, it becomes a detection." Watchfloor takeaway: every primary action — assigning a unit to a call, escalating, closing — should be ≤3 clicks from the map [(Spatial Intelligence)](https://www.spatialintelligence.ai/p/inside-palantirs-maven-smart-system).
+- **Three-click action.** "Left click, right click, left click. Magically, it becomes a detection." Operator Sim takeaway: every primary action — assigning a unit to a call, escalating, closing — should be ≤3 clicks from the map [(Spatial Intelligence)](https://www.spatialintelligence.ai/p/inside-palantirs-maven-smart-system).
 - **Consolidated panes, not tabbed apps.** Maven replaces "eight or nine systems" with one screen. "We've gone from identifying the target to now coming up with a course of action, to now actioning that target, all from one system" — Cameron Stanley, AIPCon 9 [(WinBuzzer)](https://winbuzzer.com/2026/03/16/palantir-demos-military-ai-war-plans-xcxwbn/) [(DefenseScoop)](https://defensescoop.com/2025/05/23/dod-palantir-maven-smart-system-contract-increase/).
 - **Toggle-able data layers.** Sat / drone / SIGINT / road network / prior-map are independent layers with checkboxes in a corner control. Users compose their own view [(Spatial Intelligence)](https://www.spatialintelligence.ai/p/inside-palantirs-maven-smart-system).
 
-## 9. Direct copy guidance for Watchfloor — the "if you do nothing else, do these 10 things" list
+## 9. Direct copy guidance for Operator Sim — the "if you do nothing else, do these 10 things" list
 
 Reference our locked tokens at `src/index.css`. These are Implementer-facing.
 

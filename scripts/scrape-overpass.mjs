@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
- * Watchfloor — Overpass API scraper.
+ * Operator Sim — Overpass API scraper.
  *
  * Bakes Quad Cities OSM data to public/data/qc-{roads,buildings,addresses}.{geojson,json}.
  * Run once per city. Output committed to repo (small enough). Re-run only when adding cities.

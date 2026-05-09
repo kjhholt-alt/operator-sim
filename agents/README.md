@@ -1,4 +1,4 @@
-# Watchfloor — Autonomous Build Team
+# Operator Sim — Autonomous Build Team
 
 Seven roles. Each lives in its own folder. Each has a `README.md` that briefs a fresh agent on its job, the channel it reports through, and the artifacts it owns.
 

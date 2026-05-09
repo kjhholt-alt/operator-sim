@@ -1,12 +1,12 @@
 [package]
-name = "watchfloor"
+name = "operator-sim"
 version = "0.1.0"
-description = "Watchfloor — Foundry-grade dispatch sim"
+description = "Operator Sim — Foundry-grade dispatch sim"
 authors = ["kjhholt-alt"]
 edition = "2021"
 
 [lib]
-name = "watchfloor_lib"
+name = "operator_sim_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

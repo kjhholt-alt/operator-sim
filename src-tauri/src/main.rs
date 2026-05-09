@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    watchfloor_lib::run()
+    operator_sim_lib::run()
 }

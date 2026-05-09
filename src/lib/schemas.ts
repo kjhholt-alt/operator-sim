@@ -1,5 +1,5 @@
 /**
- * Watchfloor entity ontology — Zod schemas.
+ * Operator Sim entity ontology — Zod schemas.
  *
  * These are the source of truth. TypeScript types are derived (`z.infer<...>`).
  * IndexedDB (Dexie) tables map 1:1 to these schemas. Tauri IPC payloads validate against them.

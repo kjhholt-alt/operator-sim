@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /*
- * Watchfloor — Studio-OS health emitter.
+ * Operator Sim — Studio-OS health emitter.
  * Run by Studio-OS daemon every tick to surface project liveness on the dashboard.
  * Outputs JSON to stdout following the Studio-OS health contract.
  */
@@ -51,7 +51,7 @@ function statusFile() {
 }
 
 const out = {
-  project: "watchfloor",
+  project: "operator-sim",
   ts: new Date().toISOString(),
   health: "green",
   ...pkgInfo(),

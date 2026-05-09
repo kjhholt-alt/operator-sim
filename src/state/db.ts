@@ -1,5 +1,5 @@
 /**
- * Watchfloor — Dexie (IndexedDB) schema.
+ * Operator Sim — Dexie (IndexedDB) schema.
  *
  * Persisted state for all entity kinds. zustand stores the live working set;
  * dexie is the durable layer for save/load + cross-shift continuity.
@@ -32,7 +32,7 @@ export interface SaveSlot {
   snapshot: unknown;
 }
 
-class WatchfloorDB extends Dexie {
+class OperatorSimDB extends Dexie {
   units!: EntityTable<Unit, "id">;
   incidents!: EntityTable<Incident, "id">;
   callers!: EntityTable<Caller, "id">;
@@ -45,7 +45,7 @@ class WatchfloorDB extends Dexie {
   saves!: EntityTable<SaveSlot, "id">;
 
   constructor() {
-    super("watchfloor");
+    super("operator-sim");
     this.version(1).stores({
       units: "id, status, current_incident_id, homebase_station_id",
       incidents: "id, status, type, severity, address_id, shift_id",
@@ -61,4 +61,4 @@ class WatchfloorDB extends Dexie {
   }
 }
 
-export const db = new WatchfloorDB();
+export const db = new OperatorSimDB();

@@ -30,7 +30,7 @@ You are the merge gate. Block bad PRs. Don't write code.
 
 - `code-review:code-review` skill
 - `simplify` skill
-- `/dispatchaudit` skill (Watchfloor-specific)
+- `/dispatchaudit` skill (Operator Sim-specific)
 - gh CLI for PR state, comments, blocking labels
 - `security-review` skill on PRs touching auth / IPC / file system
 

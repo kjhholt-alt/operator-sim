@@ -1,20 +1,27 @@
-# Watchfloor — STATUS
+# Operator Sim — STATUS
 
 > Updated by Producer agent every 30 min during active sprints. This file IS the truth.
 
 **Last updated:** 2026-05-09 — end of Day 0 autonomous run
 **Phase:** Day 0 complete · Day 1 research complete · Day 2 prep complete
-**Build:** v0.0.1-day0 (master @ Day 2 prep commit)
+**Build:** v0.0.1-day0
+**Title:** Operator Sim — locked. (Renamed from "Watchfloor" placeholder 2026-05-09 evening.)
+**Repo:** [github.com/kjhholt-alt/operator-sim](https://github.com/kjhholt-alt/operator-sim)
+**End-of-year goal:** Steam Early Access launch by 2026-12-31. See `docs/GDD.md` § 11 for the 8-phase roadmap.
 **CI:** workflows wired, will run on first PR
 **Open touchpoint:** none — autonomous
 **Blockers:** none
+
+**API keys:**
+- ✅ Firecrawl (`fc-d6c9b3f0fbb344c08ea5a3a94b164cf4`) — saved to `.env` (gitignored). Researcher unblocked for next reference scrape.
+- ✅ Discord webhook — saved to `.env`.
 
 ---
 
 ## Done (Day 0 autonomous run, 2026-05-09)
 
 ### Scaffold
-- Repo at `kjhholt-alt/watchfloor` (public). Vite + React 19 + Tailwind 4 + Tauri 2.
+- Repo at `kjhholt-alt/operator-sim` (public). Vite + React 19 + Tailwind 4 + Tauri 2.
 - Shell components: TopStrip, LeftRail, CenterMap (with live MapLibre), RightRail, BottomTicker, CommandPalette.
 - Palantir tokens locked in `src/index.css` (matches `feedback_design_palantir.md`).
 - JetBrains Mono + IBM Plex Sans fonts.
@@ -42,7 +49,7 @@
 - 3 GitHub Actions workflows: `ci.yml`, `tauri.yml`, `dispatchaudit.yml`.
 - Studio-OS registered (`~/.operator/studio/studio.toml`); `scripts/emit-status.mjs` lives.
 - `docs/CLAUDE_DESIGN_PROMPTS.md` — pre-built prompts for claude.ai/design (6 panels + iteration prompts).
-- Project memory saved (`project_watchfloor.md`, `reference_claude_design.md`, MEMORY.md updated).
+- Project memory saved (`project_operator-sim.md`, `reference_claude_design.md`, MEMORY.md updated).
 
 ### Discord
 - Kickoff posted to `#claude-chat`.
@@ -64,7 +71,7 @@ Per `docs/GDD.md` § 9. Day 2 = OSM tiles + 1 unit moves on real roads. Day 7 = 
 
 ## Open questions for Kruz
 
-1. **Title.** Watchfloor placeholder OK, or rename now? Easy to rename — `gh repo rename` + commit.
+1. **Title.** Operator Sim placeholder OK, or rename now? Easy to rename — `gh repo rename` + commit.
 2. **Firecrawl API key.** Researcher worked from cached knowledge today. Future research passes (Steam-page screenshot scraping, deeper Foundry references) would benefit from a real key. Get one at https://firecrawl.dev (free tier).
 3. **Cities.** Default = Quad Cities. Want a 2nd-city pre-bake (Iowa City? someplace bigger like Chicago for ambition?) or stay focused on QC for v0.1?
 
@@ -72,7 +79,7 @@ Per `docs/GDD.md` § 9. Day 2 = OSM tiles + 1 unit moves on real roads. Day 7 = 
 
 | # | When | Question | Status |
 |---|---|---|---|
-| 1 | End Wk1 | Does it feel like Watchfloor? | unspent |
+| 1 | End Wk1 | Does it feel like Operator Sim? | unspent |
 | 2 | Mid Wk2 | Mid-week feel check | unspent |
 | 3 | End Wk3 | hi-fi mockup review | unspent |
 | 4 | End Wk4 | ship or extend? | unspent |

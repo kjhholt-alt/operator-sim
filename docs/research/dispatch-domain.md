@@ -1,5 +1,5 @@
 ---
-summary: Real-world emergency dispatch primer covering NFIRS taxonomy, CAD record structure, unit FSMs, radio codes, apparatus ontology, ICS/mutual aid, NFPA response benchmarks, and the texture of an actual dispatcher's shift. Designed to keep Watchfloor authentic without forcing the player to memorize 600 codes.
+summary: Real-world emergency dispatch primer covering NFIRS taxonomy, CAD record structure, unit FSMs, radio codes, apparatus ontology, ICS/mutual aid, NFPA response benchmarks, and the texture of an actual dispatcher's shift. Designed to keep Operator Sim authentic without forcing the player to memorize 600 codes.
 actionable_for: [designer, implementer-a]
 sources: 22
 written: 2026-05-09
@@ -53,7 +53,7 @@ A real CAD record (Tyler New World, Hexagon OnCall, Motorola PremierOne, Central
 
 CAD systems are **append-only by design**. You cannot edit history; you can only add notes. This matters for the sim — a player should never be able to "undo" a dispatch decision, only correct it forward.
 
-CAD-to-CAD interoperability is still painful in 2026 — NHTSA's 2022 report calls it "the dominant gap in regional 911." Watchfloor can ignore inter-agency CAD plumbing entirely without losing realism.
+CAD-to-CAD interoperability is still painful in 2026 — NHTSA's 2022 report calls it "the dominant gap in regional 911." Operator Sim can ignore inter-agency CAD plumbing entirely without losing realism.
 
 **Source:** BJA *Law Enforcement CAD Systems* standard functional specification; NHTSA *CAD Interoperability Final Report* (July 2022); DHS S&T CAD TechNote.
 
@@ -254,14 +254,14 @@ The texture an authentic sim must capture, mostly absent from film:
 6. **Paperwork is the back half of every call.** Disposition codes, supplements, NIBRS classification for police, NFIRS for fire, ePCR for EMS. A dispatcher closes 50 calls a shift; each one has a fielded form.
 7. **Stale information is a hazard.** A unit that says ENROUTE but hasn't moved in 4 minutes is a problem. CADs run "status timers" that nag the dispatcher to re-check overdue units.
 8. **Officer/medic safety overrides everything.** Status check ("10-12, status?") on a unit that's gone quiet is the highest-priority transmission; a real dispatcher will step on every other channel to get it.
-9. **Geography is muscle memory.** Senior dispatchers know the city by intersection, alarm box, hydrant grid, hospital trauma level. Newer staff lean on the CAD map. Watchfloor can model this as a competence stat.
+9. **Geography is muscle memory.** Senior dispatchers know the city by intersection, alarm box, hydrant grid, hospital trauma level. Newer staff lean on the CAD map. Operator Sim can model this as a competence stat.
 10. **Boredom is dangerous.** Long stretches of nothing wreck attention — when the big call comes in, it's at minute 412 of a quiet 720-minute shift. Fatigue + transition is when errors cluster.
 
 **Source:** AEDR Journal (mental health dispatch training studies); IAED Journal *Proceed With Caution*; NCBI PMC scoping review of dispatcher depression/suicidal ideation; BJA *Essential Elements of PMHC* call-taker protocols.
 
 ---
 
-## For the Game — 10 Design Decisions Watchfloor Should Make
+## For the Game — 10 Design Decisions Operator Sim Should Make
 
 1. **Plain language by default; 10-codes as a Captain-tier difficulty toggle.** Matches post-NIMS reality, lowers onboarding cost, lets the dedicated player flip on the harder vocabulary as a flex.
 2. **Use the NFIRS 100/200/300/400/500/600/700/800/900 series as the canonical incident taxonomy.** Don't invent codes. Three digits, hover-tooltip the meaning. NERIS naming if you want a 2026-current label, NFIRS shape underneath.
@@ -272,7 +272,7 @@ The texture an authentic sim must capture, mostly absent from film:
 7. **NFPA 1710 timing thresholds drive scoring.** Call-processing ≤60s, turnout ≤80s, first-due ≤4min, full alarm ≤8min, ALS ≤8min. Show them as bars filling — green/yellow/red — not numeric scores. Cardiac calls visibly degrade survival per minute on screen (the 7–10%/min curve from Cummins).
 8. **Apparatus types are not interchangeable.** Sending an Engine to a high-rise fire alone is wrong; needing a Quint for vertical vent matters. Wrong-rig dispatch should fail the call mechanically, not just cosmetically. The ontology is the puzzle.
 9. **Mutual aid as an unlockable lever, not free.** Every mutual-aid request costs reputation/budget and triggers ICS Unified Command — more comms overhead, more channels open. Makes "do I escalate?" a real decision rather than a free button.
-10. **Suicide / mental-health calls are first-class content, handled with weight.** Plain-language script options drawn from EMD Protocol 41 and CIT principles, with the dispatcher staying on the line. No score-multiplier on these — outcome is "caller safe / handed off to crisis team / officer on scene." Dispatcher mental-health is itself a meter; ignore self-care stretches and cumulative stress affects later-shift performance. This is what separates Watchfloor from Tycoon clones.
+10. **Suicide / mental-health calls are first-class content, handled with weight.** Plain-language script options drawn from EMD Protocol 41 and CIT principles, with the dispatcher staying on the line. No score-multiplier on these — outcome is "caller safe / handed off to crisis team / officer on scene." Dispatcher mental-health is itself a meter; ignore self-care stretches and cumulative stress affects later-shift performance. This is what separates Operator Sim from Tycoon clones.
 
 ---
 

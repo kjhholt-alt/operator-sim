@@ -5,9 +5,9 @@ sources: 19
 written: 2026-05-09
 ---
 
-# Watchfloor — Narrative shift design dossier
+# Operator Sim — Narrative shift design dossier
 
-The pillar is "DM-driven narrative shifts" (GDD §2 pillar 3, §6). The risk is that procedural content reads as random noise and scripted content collapses replay value. This dossier pulls the structural patterns from tabletop RPG design and procedural-narrative games, adapts them to an 8-12 game-min watchfloor shift, and ends with a copy-paste-ready prompt scaffold for the Designer agent.
+The pillar is "DM-driven narrative shifts" (GDD §2 pillar 3, §6). The risk is that procedural content reads as random noise and scripted content collapses replay value. This dossier pulls the structural patterns from tabletop RPG design and procedural-narrative games, adapts them to an 8-12 game-min operator-sim shift, and ends with a copy-paste-ready prompt scaffold for the Designer agent.
 
 ---
 
@@ -19,7 +19,7 @@ These are the patterns that work across decades of play and dozens of systems. P
 
 A **front** is a problem advancing on the players whether or not they engage with it. Each front contains 2-4 **threats** (an NPC, a faction, a location, a phenomenon), each with a **clock** ticking from `0:00` (introduced) → `12:00` (catastrophe). On a "soft move" (player rolls a partial success or doesn't react fast enough), the DM ticks the clock forward.
 
-For Watchfloor: a front is a **slow-burn condition** in the city — "rising elderly-isolation cluster on Brady Street", "meth lab somewhere on the west side of Rock Island", "dispatcher Diaz is burning out". Each ticks across multiple shifts. Incidents are how the front pokes through.
+For Operator Sim: a front is a **slow-burn condition** in the city — "rising elderly-isolation cluster on Brady Street", "meth lab somewhere on the west side of Rock Island", "dispatcher Diaz is burning out". Each ticks across multiple shifts. Incidents are how the front pokes through.
 
 Reference: *Apocalypse World*, Lumpley Games, 2nd ed.; pages 138-153 on fronts.
 
@@ -27,7 +27,7 @@ Reference: *Apocalypse World*, Lumpley Games, 2nd ed.; pages 138-153 on fronts.
 
 Each session is a **score** — a defined operation with a target, a plan, and predictable beats. Scores happen against a backdrop of **factions** with their own goals and clocks running outside the player's view. Replay value is high because the score structure is consistent (good for the player) but the faction matrix is dynamic (good for the world).
 
-For Watchfloor: a shift IS a score. The "score" is "make it through 8-12 game minutes and resolve the planned incidents". The faction layer (slumlord, opioid dealer, hospital staffing crisis, weather) ticks underneath. Players never directly touch the faction sheet but they feel its weather.
+For Operator Sim: a shift IS a score. The "score" is "make it through 8-12 game minutes and resolve the planned incidents". The faction layer (slumlord, opioid dealer, hospital staffing crisis, weather) ticks underneath. Players never directly touch the faction sheet but they feel its weather.
 
 Reference: *Blades in the Dark*, Evil Hat, ch. 6 "The Score" + ch. 7 "Factions".
 
@@ -35,7 +35,7 @@ Reference: *Blades in the Dark*, Evil Hat, ch. 6 "The Score" + ch. 7 "Factions".
 
 A **soft move** sets up consequence ("the goblin readies an arrow"); a **hard move** delivers it ("the arrow hits"). The DM only escalates to a hard move on a player miss or after a soft-move warning was ignored.
 
-For Watchfloor: this is the framework for **incident escalation**. A soft move is "fire incident pre-arrival call from a worried neighbor — smoke smell". A hard move is "second-floor flashover, the structure is going". The dispatcher's response to soft moves determines whether the hard move fires.
+For Operator Sim: this is the framework for **incident escalation**. A soft move is "fire incident pre-arrival call from a worried neighbor — smoke smell". A hard move is "second-floor flashover, the structure is going". The dispatcher's response to soft moves determines whether the hard move fires.
 
 Reference: *Dungeon World*, Sage Kobold; "GM's principles" + "GM moves" pages.
 
@@ -43,7 +43,7 @@ Reference: *Dungeon World*, Sage Kobold; "GM's principles" + "GM moves" pages.
 
 Crawford's procedural-tools library — random tables for rumors, regions, factions, NPCs, conspiracies. The point is **lots of small, semantically tagged generators** that combine to feel curated rather than one big generator that feels procedural.
 
-For Watchfloor: don't write one mega-prompt for "generate a shift". Write 8-12 small generators (`generate_caller_persona`, `generate_address_drama`, `generate_weather_pressure`, `generate_BOLO`) and have the orchestrator compose them. This is also an LLM win — small focused prompts are more reliable than one giant one.
+For Operator Sim: don't write one mega-prompt for "generate a shift". Write 8-12 small generators (`generate_caller_persona`, `generate_address_drama`, `generate_weather_pressure`, `generate_BOLO`) and have the orchestrator compose them. This is also an LLM win — small focused prompts are more reliable than one giant one.
 
 Reference: *Worlds Without Number*, Sine Nomine Publishing, free PDF version.
 
@@ -60,7 +60,7 @@ Reference: *Worlds Without Number*, Sine Nomine Publishing, free PDF version.
 | **RimWorld** | Storyteller AI ("Cassandra Classic") paces threats based on player wealth and history. | Pacing feels human; no two playthroughs are identical. | Threats can feel arbitrary; the AI is invisible to the player so it never feels "earned". |
 | **Disco Elysium** | Hand-authored thoughts cabinet that responds to play history. | Best-in-class branching narrative. | Not procedural — every word is hand-written. Cannot scale. |
 
-**The pattern that wins in practice:** *small number of hand-authored arc skeletons* (5-15) × *procedural NPCs/incidents/details that fill the slots*. Wildermyth's failure mode is too many simultaneously active arcs; Frost Punk's success is one arc per playthrough done deeply. Watchfloor should default to **1 active narrative thread per shift, occasionally 2, never 3+**.
+**The pattern that wins in practice:** *small number of hand-authored arc skeletons* (5-15) × *procedural NPCs/incidents/details that fill the slots*. Wildermyth's failure mode is too many simultaneously active arcs; Frost Punk's success is one arc per playthrough done deeply. Operator Sim should default to **1 active narrative thread per shift, occasionally 2, never 3+**.
 
 ---
 
@@ -70,7 +70,7 @@ Reference: *Worlds Without Number*, Sine Nomine Publishing, free PDF version.
 
 For any conclusion the DM needs the players to reach, plant **at least three clues**, because two will be missed and one will be misinterpreted. ([thealexandrian.net/wordpress/1118/roleplaying-games/three-clue-rule](https://thealexandrian.net/wordpress/1118/roleplaying-games/three-clue-rule))
 
-For Watchfloor: if a thread is "the elderly-isolation cluster on Brady Street pays off as a welfare-check that prevents a cardiac arrest", the DM should plant:
+For Operator Sim: if a thread is "the elderly-isolation cluster on Brady Street pays off as a welfare-check that prevents a cardiac arrest", the DM should plant:
 
 1. A medical-low-priority shift earlier ("Margaret K., 67, fell in the kitchen, refused transport").
 2. A neighbor's noise complaint mentioning "her dog won't stop barking" — a soft tell.
@@ -80,11 +80,11 @@ If the player notices any one, they get the cardiac shift's "pre-arrival ALS pre
 
 ### Foreshadowing and returning NPCs
 
-Standard procedural drama technique: a character introduced in shift N becomes a caller in shift N+2 or a victim in shift N+5. Watchfloor's `Caller` and `Address` are first-class entities (GDD §5) — perfect substrate for this. The Designer agent should be encouraged to **reuse caller names and addresses** from prior shifts when generating a new shift.
+Standard procedural drama technique: a character introduced in shift N becomes a caller in shift N+2 or a victim in shift N+5. Operator Sim's `Caller` and `Address` are first-class entities (GDD §5) — perfect substrate for this. The Designer agent should be encouraged to **reuse caller names and addresses** from prior shifts when generating a new shift.
 
 ### Patterns recognized only on second play
 
-The Wire and Disco Elysium both bury references to the ending in the opening hours. Watchfloor's analog: a name in a BOLO at shift 3 becomes a suspect at shift 8. The player who replays a campaign sees it; the first-time player doesn't notice. This is **free narrative depth** as long as the Designer agent has access to "future shift drafts" when authoring earlier ones — i.e., generate the campaign arc first, then individual shifts.
+The Wire and Disco Elysium both bury references to the ending in the opening hours. Operator Sim's analog: a name in a BOLO at shift 3 becomes a suspect at shift 8. The player who replays a campaign sees it; the first-time player doesn't notice. This is **free narrative depth** as long as the Designer agent has access to "future shift drafts" when authoring earlier ones — i.e., generate the campaign arc first, then individual shifts.
 
 Reference: Robin Laws, *Hamlet's Hit Points* — a structural toolkit for narrative beats.
 
@@ -92,7 +92,7 @@ Reference: Robin Laws, *Hamlet's Hit Points* — a structural toolkit for narrat
 
 ## 4. Police-procedural drama structure
 
-| Show | Arc unit | Why it works | Watchfloor analog |
+| Show | Arc unit | Why it works | Operator Sim analog |
 |---|---|---|---|
 | **The Wire** | Season-long (10-13 episodes) | Slow-build institutional drama; payoffs across 30+ hrs of TV. | A **career arc** (5-7 shifts at a tier) plays here. |
 | **Brooklyn Nine-Nine** | Episode-of-the-week + season B-plot (relationship arcs) | Low-stakes joy per episode, B-plot for replay. | Each shift has its score (A-plot) + 1 personnel/relationship beat (B-plot). |
@@ -100,7 +100,7 @@ Reference: Robin Laws, *Hamlet's Hit Points* — a structural toolkit for narrat
 | **9-1-1 (Fox)** | Episode-of-the-week, multiple intercut incidents per ep | 911-call structure; 4-6 incidents per ep, often loosely thematically linked (heat wave, eclipse, blackout). | Direct match. Best reference for "shift with multiple incidents linked by a slow theme". |
 | **The Shield** | Season arc, hard episode endings | Each ep escalates a pot that boils across season. | The "front" (Apocalypse World) — a slow-burn problem with shift-by-shift escalation. |
 
-**The right unit for Watchfloor is the shift (8-12 min) for self-contained beats, and the career arc (5-7 shifts) for slow-burn fronts.** That mirrors *9-1-1* and *Third Watch* almost exactly. Avoid The Wire scope on v0.1 — too long for a self-contained game session.
+**The right unit for Operator Sim is the shift (8-12 min) for self-contained beats, and the career arc (5-7 shifts) for slow-burn fronts.** That mirrors *9-1-1* and *Third Watch* almost exactly. Avoid The Wire scope on v0.1 — too long for a self-contained game session.
 
 ---
 
@@ -192,7 +192,7 @@ Drop this into `agents/designer/prompts/shift-dm.md`. Designer can refine on Day
 ```text
 SYSTEM:
 
-You are the Watchfloor Designer — a procedural narrative DM in the lineage of
+You are the Operator Sim Designer — a procedural narrative DM in the lineage of
 Apocalypse World, Blades in the Dark, and police-procedural showrunners
 (9-1-1, Third Watch, The Wire). You generate a shift document for a
 dispatch sim set in a real OSM hometown.
@@ -298,5 +298,5 @@ Group into 4 career arcs of 5-7 shifts each, plus 2 standalones. Each arc has a 
 - *Third Watch* episode database — TV Tropes structural notes. https://tvtropes.org/pmwiki/pmwiki.php/Series/ThirdWatch
 - *911 Operator* (Jutsu Games, 2017) — counter-example for shift-only-no-arc design.
 - Cassandra Classic AI walkthrough — RimWorld wiki. https://rimworldwiki.com/wiki/Storyteller
-- Watchfloor GDD §6 — local source of truth for the YAML schema.
+- Operator Sim GDD §6 — local source of truth for the YAML schema.
 - Anthropic prompt-engineering best practices — https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering
