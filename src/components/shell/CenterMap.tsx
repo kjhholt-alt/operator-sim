@@ -1,4 +1,5 @@
 import { cn } from "@/lib/cn";
+import { Map } from "@/components/map/Map";
 
 interface Props {
   className?: string;
@@ -6,13 +7,8 @@ interface Props {
 
 export function CenterMap({ className }: Props) {
   return (
-    <main className={cn("bg-bg-base relative min-h-0", className)}>
-      <div className="absolute inset-0 grid place-items-center">
-        <div className="text-center font-mono text-fg-dim text-[11px] uppercase tracking-[0.22em]">
-          <div>MapLibre + deck.gl</div>
-          <div className="mt-2 text-fg-mute text-[10px]">awaiting Day 2 — Quad Cities OSM tiles + IconLayer</div>
-        </div>
-      </div>
+    <main className={cn("bg-bg-base relative min-h-0 overflow-hidden", className)}>
+      <Map />
 
       {/* Sector overlay placeholder (top-left) */}
       <div className="absolute top-3 left-3 font-mono text-[9px] uppercase tracking-[0.22em] text-fg-dim bg-bg-panel/80 backdrop-blur-sm px-2 py-1 border border-border-subtle">
