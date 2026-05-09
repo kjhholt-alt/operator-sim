@@ -116,6 +116,7 @@ export function spawnDueIncidents(
       dispatched_unit_ids: [],
       narrative_thread_id: si.thread_id,
       shift_id: shift.id,
+      required_unit_classes: si.required_units,
     };
     incidents.push(incident);
     spawned_ids.push(si.id);

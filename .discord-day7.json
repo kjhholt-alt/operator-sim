@@ -1,0 +1,47 @@
+{
+  "username": "Operator Sim Build",
+  "embeds": [
+    {
+      "title": "Day 7 shipped — Phase 1 done · Producer touchpoint #1 open",
+      "url": "https://github.com/kjhholt-alt/operator-sim/commit/36a8c54",
+      "description": "Tier 1 is fully playable end-to-end. Day 7 closes Phase 1 with on-screen feedback during the shift (live HUD), defensive store hygiene, and boundary-case test coverage. **65/65 tests pass.** STATUS.md is rewritten as the touchpoint brief — see below for the five concrete questions.",
+      "color": 4185983,
+      "fields": [
+        {"name": "Commit", "value": "[`36a8c54`](https://github.com/kjhholt-alt/operator-sim/commit/36a8c54)", "inline": true},
+        {"name": "Build", "value": "tsc clean · 65/65 tests · vite 13s · 531 KB gz", "inline": true},
+        {"name": "Phase 1", "value": "**COMPLETE** · Day 0–7 ✅", "inline": false},
+        {
+          "name": "Live Shift HUD (TopStrip)",
+          "value": "`ShiftHUD.tsx` shows shift id + tier · 5-block spawn meter (filled cyan as incidents arrive) · running ●N on-time count · draining time-left bar (emerald → amber → crimson) that flips to `ENDED` at completion. Hidden until a shift is loaded.",
+          "inline": false
+        },
+        {
+          "name": "Defensive loadShift",
+          "value": "Arming a new shift now resets `game_min` to 0 and unpauses, so a re-load can't accidentally start the player mid-clock. Covered by a smoke test through useFloor.",
+          "inline": false
+        },
+        {
+          "name": "+7 edge-case tests",
+          "value": "High-speed multi-spawn jump (game_min jumps from 0 to 10 in one frame → both due incidents fire) · exact-boundary spawn timing (≥, not strict >) · deadline-as-in-window boundary (resolved AT due_by → in_window) · cancelled outcome · on-scene-at-end → missed · 0.80 score → grade B · defensive loadShift smoke.",
+          "inline": false
+        },
+        {
+          "name": "STATUS.md (rewritten)",
+          "value": "Now reflects Day 0–7 actuals + per-day commits + a 6-row test inventory. Opens [touchpoint #1](https://github.com/kjhholt-alt/operator-sim/blob/master/STATUS.md) with the questions below.",
+          "inline": false
+        },
+        {
+          "name": "❓ Touchpoint #1 — Does it feel like Operator Sim?",
+          "value": "**1.** Pacing — does Tier 1 at 1× feel deliberate or boring? At 4× do you lose track?\n**2.** Shift HUD — does the spawn meter + on-time counter + time bar give a useful read?\n**3.** End-of-shift summary — is the S/A/B/C/D grade the right resolution, or do we need a debrief screen?\n**4.** Discoverability — Ctrl+K reveals everything, but a new player wouldn't know that. Tutorial pop-up needed, or is the BottomTicker hint enough?\n**5.** Should Tier 1 introduce all 5 incident types — or front-load with one type so the player learns the loop before variety lands?",
+          "inline": false
+        },
+        {
+          "name": "Phase 2 backlog (if green-lit)",
+          "value": "2nd shift at Tier 2 (denser pacing) · multi-unit incidents (engine + ambulance for MVAs) · police agency (`patrol`, `k9`, agency-aware routing) · full QC bbox tile-and-merge · `save` / `replay` verbs.",
+          "inline": false
+        }
+      ],
+      "footer": {"text": "Operator Sim · Day 7 · master @ 36a8c54 · touchpoint #1 OPEN"}
+    }
+  ]
+}

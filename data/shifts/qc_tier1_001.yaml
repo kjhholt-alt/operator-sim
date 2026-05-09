@@ -39,6 +39,7 @@ incidents:
     address: 400 West 4th Street
     caller_persona: Driver involved, shaken but uninjured
     expected_units: 1 engine + 1 ambulance
+    required_units: [engine, ambulance_als]
     resolution_window_game_min: 2.5
     narrative_hooks:
       - Two-car fender bender, no entrapment, fluid leak

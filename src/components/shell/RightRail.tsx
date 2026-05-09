@@ -295,6 +295,8 @@ function IncidentDossier({ i }: { i: Incident }) {
   const addresses = useFloor((s) => s.addresses);
   const callers = useFloor((s) => s.callers);
   const intel = useFloor((s) => s.intel);
+  const units = useFloor((s) => s.units);
+  const vehicles = useFloor((s) => s.vehicles);
   const addr = addresses.get(i.address_id);
   const caller = i.caller_id ? callers.get(i.caller_id) : null;
   const sevTone: RowProps["tone"] =
@@ -305,6 +307,16 @@ function IncidentDossier({ i }: { i: Incident }) {
   const linkedIntel: Intel[] = [];
   for (const x of intel.values()) {
     if (x.linked_entity_ids.includes(i.id)) linkedIntel.push(x);
+  }
+
+  // Day 8: per-class requirement check. Empty required = single-unit.
+  const required = i.required_unit_classes ?? [];
+  const onSceneClasses = new Set<string>();
+  for (const uid of i.dispatched_unit_ids) {
+    const u = units.get(uid);
+    if (!u || u.status !== "on_scene" || u.current_incident_id !== i.id) continue;
+    const v = vehicles.get(u.vehicle_id);
+    if (v) onSceneClasses.add(v.class);
   }
 
   return (
@@ -320,6 +332,13 @@ function IncidentDossier({ i }: { i: Incident }) {
         <Row label="status" value={i.status.toUpperCase()} tone="cyan" />
         <Row label="reported" value={`${i.reported_at_game_min.toFixed(1)} min`} />
         <Row label="window" value={`${i.resolution_window_game_min.toFixed(1)} min`} />
+        {i.dwell_started_at_game_min !== undefined && i.status !== "resolved" && (
+          <Row
+            label="dwell since"
+            value={`${i.dwell_started_at_game_min.toFixed(1)} min`}
+            tone="cyan"
+          />
+        )}
         {i.resolved_at_game_min !== undefined && (
           <Row
             label="resolved"
@@ -328,6 +347,21 @@ function IncidentDossier({ i }: { i: Incident }) {
           />
         )}
       </Section>
+      {required.length > 0 && (
+        <Section title="required units">
+          {required.map((c) => {
+            const met = onSceneClasses.has(c);
+            return (
+              <Row
+                key={c}
+                label={c.replace(/_/g, " ")}
+                value={met ? "✓ on scene" : "— pending"}
+                tone={met ? "emerald" : "amber"}
+              />
+            );
+          })}
+        </Section>
+      )}
       <Section title="linked">
         <EntityLink
           label="address"

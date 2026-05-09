@@ -206,6 +206,13 @@ export const Incident = z.object({
   resolution_notes: z.string().optional(),
   narrative_thread_id: z.string().optional(),
   shift_id: z.string(),
+  // Day 8: multi-unit incidents. Empty = single-unit incident (any unit can
+  // resolve solo). Non-empty = ALL listed vehicle classes must be on_scene
+  // simultaneously before the resolution dwell timer starts.
+  required_unit_classes: z.array(VehicleClass).default([]),
+  // Set by tickStep when the requirement is first satisfied. Stays set
+  // afterwards even if a unit leaves on_scene (no take-backs once dwell starts).
+  dwell_started_at_game_min: GameMin.optional(),
 });
 export type Incident = z.infer<typeof Incident>;
 
@@ -237,7 +244,10 @@ export const ShiftIncident = z.object({
   severity: IncidentSeverity.default("moderate"),
   address: z.string(), // human address — validator resolves to Address.id
   caller_persona: z.string().optional(),
-  expected_units: z.string().optional(), // e.g. "1 medic"
+  expected_units: z.string().optional(), // human-readable, e.g. "1 medic"
+  // Day 8: enforced version of expected_units. Listed VehicleClasses must ALL
+  // be on_scene before the dwell timer starts. Empty = single-unit (current).
+  required_units: z.array(VehicleClass).default([]),
   resolution_window_game_min: GameMin,
   narrative_hooks: z.array(z.string()).default([]),
   thread_id: z.string().optional(),

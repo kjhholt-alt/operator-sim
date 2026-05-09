@@ -91,6 +91,7 @@ function seed() {
     resolution_window_game_min: 2,
     dispatched_unit_ids: [],
     shift_id: "test",
+    required_unit_classes: [],
   };
   const incidentDead: Incident = {
     id: "i_99",
@@ -102,6 +103,7 @@ function seed() {
     resolution_window_game_min: 1,
     dispatched_unit_ids: [],
     shift_id: "test",
+    required_unit_classes: [],
   };
   useFloor.setState({
     units: new Map([[unitA.id, unitA], [unitB.id, unitB]]),

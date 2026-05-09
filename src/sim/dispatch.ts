@@ -12,7 +12,7 @@
  */
 
 import { useFloor } from "@/state/useFloor";
-import type { Unit, Incident, Coord } from "@/lib/schemas";
+import type { Unit, Incident, Coord, VehicleClass, Vehicle } from "@/lib/schemas";
 import { shortestPath, walkAlong } from "./pathfinding";
 import type { RoadGraph } from "./roadGraph";
 
@@ -166,7 +166,41 @@ interface FsmContext {
   road_graph: RoadGraph | null;
   addresses: ReturnType<typeof useFloor.getState>["addresses"];
   stations: ReturnType<typeof useFloor.getState>["stations"];
+  // Day 8: needed so the FSM can resolve a unit's vehicle class for the
+  // multi-unit requirement check (Incident.required_unit_classes).
+  vehicles: Map<string, Vehicle>;
   events: string[];
+}
+
+/**
+ * Day 8: returns true iff every class in `required` is represented by at
+ * least one on_scene unit on this incident. Empty `required` means
+ * single-unit-required-by-default (any one on_scene unit is enough).
+ */
+function requirementMet(
+  required: VehicleClass[],
+  incident: Incident,
+  units: Map<string, Unit>,
+  vehicles: Map<string, Vehicle>,
+): boolean {
+  if (required.length === 0) {
+    // Legacy single-unit incident — at least one unit on_scene suffices.
+    for (const uid of incident.dispatched_unit_ids) {
+      const u = units.get(uid);
+      if (u && u.status === "on_scene" && u.current_incident_id === incident.id) {
+        return true;
+      }
+    }
+    return false;
+  }
+  const onScene = new Set<VehicleClass>();
+  for (const uid of incident.dispatched_unit_ids) {
+    const u = units.get(uid);
+    if (!u || u.status !== "on_scene" || u.current_incident_id !== incident.id) continue;
+    const v = vehicles.get(u.vehicle_id);
+    if (v) onScene.add(v.class);
+  }
+  return required.every((c) => onScene.has(c));
 }
 
 /**
@@ -240,60 +274,73 @@ export function tickStep(delta_game_min: number, ctx: FsmContext): void {
     }
   }
 
-  // ── Phase 3: on-scene resolution + auto-return ───────────────────────
-  for (const [id, unit] of ctx.units) {
-    if (unit.status !== "on_scene" || !unit.current_incident_id) continue;
-    const inc = ctx.incidents.get(unit.current_incident_id);
-    if (!inc) continue;
-    const dwell = ctx.game_min - unit.status_since_game_min;
+  // ── Phase 3a: per-incident dwell-start gate ──────────────────────────
+  // Day 8: an incident's resolution dwell timer starts once ALL required
+  // vehicle classes are represented on_scene. For legacy single-unit
+  // incidents (required_unit_classes=[]), the first on_scene unit suffices.
+  for (const [iid, inc] of ctx.incidents) {
+    if (inc.status === "resolved" || inc.status === "cancelled") continue;
+    if (inc.dwell_started_at_game_min !== undefined) continue;
+    const required = inc.required_unit_classes ?? [];
+    if (requirementMet(required, inc, ctx.units, ctx.vehicles)) {
+      ctx.incidents.set(iid, { ...inc, dwell_started_at_game_min: ctx.game_min });
+      const tag = required.length === 0 ? "" : ` (${required.join("+")})`;
+      ctx.events.push(`engaged · ${inc.id}${tag}`);
+    }
+  }
+
+  // ── Phase 3b: dwell-elapsed → resolve + send all on-scene units home ─
+  for (const [iid, inc] of ctx.incidents) {
+    if (inc.status === "resolved" || inc.status === "cancelled") continue;
+    if (inc.dwell_started_at_game_min === undefined) continue;
+    const dwell = ctx.game_min - inc.dwell_started_at_game_min;
     if (dwell < inc.resolution_window_game_min) continue;
 
-    // Mark incident resolved (idempotent).
-    if (inc.status !== "resolved") {
-      ctx.incidents.set(inc.id, {
-        ...inc,
-        status: "resolved",
-        resolved_at_game_min: ctx.game_min,
-      });
-      ctx.events.push(`resolved · ${inc.id} (${unit.callsign})`);
-    }
-
-    // Send unit home.
-    if (!ctx.road_graph) {
-      // No graph → declare available in place. Shouldn't happen in practice.
-      ctx.units.set(id, {
-        ...unit,
-        status: "available",
-        status_since_game_min: ctx.game_min,
-        current_incident_id: undefined,
-      });
-      continue;
-    }
-    const station = ctx.stations.get(unit.homebase_station_id);
-    const homeAddr = station ? ctx.addresses.get(station.address_id) : undefined;
-    const homeCoord: Coord = homeAddr?.coord ?? unit.current_position;
-    const route = shortestPath(ctx.road_graph, unit.current_position, homeCoord);
-
-    if (!route) {
-      ctx.units.set(id, {
-        ...unit,
-        status: "available",
-        status_since_game_min: ctx.game_min,
-        current_incident_id: undefined,
-      });
-      continue;
-    }
-
-    ctx.units.set(id, {
-      ...unit,
-      status: "returning",
-      status_since_game_min: ctx.game_min,
-      current_route: route.coords,
-      route_progress_m: 0,
-      route_total_m: route.length_m,
-      destination_coord: homeCoord,
-      on_arrival: "available",
-      current_incident_id: undefined,
+    // Resolve the incident itself.
+    ctx.incidents.set(iid, {
+      ...inc,
+      status: "resolved",
+      resolved_at_game_min: ctx.game_min,
     });
+    ctx.events.push(`resolved · ${inc.id}`);
+
+    // Send every still-on-scene unit on this incident home.
+    for (const uid of inc.dispatched_unit_ids) {
+      const unit = ctx.units.get(uid);
+      if (!unit || unit.status !== "on_scene" || unit.current_incident_id !== inc.id) continue;
+      if (!ctx.road_graph) {
+        ctx.units.set(uid, {
+          ...unit,
+          status: "available",
+          status_since_game_min: ctx.game_min,
+          current_incident_id: undefined,
+        });
+        continue;
+      }
+      const station = ctx.stations.get(unit.homebase_station_id);
+      const homeAddr = station ? ctx.addresses.get(station.address_id) : undefined;
+      const homeCoord: Coord = homeAddr?.coord ?? unit.current_position;
+      const route = shortestPath(ctx.road_graph, unit.current_position, homeCoord);
+      if (!route) {
+        ctx.units.set(uid, {
+          ...unit,
+          status: "available",
+          status_since_game_min: ctx.game_min,
+          current_incident_id: undefined,
+        });
+        continue;
+      }
+      ctx.units.set(uid, {
+        ...unit,
+        status: "returning",
+        status_since_game_min: ctx.game_min,
+        current_route: route.coords,
+        route_progress_m: 0,
+        route_total_m: route.length_m,
+        destination_coord: homeCoord,
+        on_arrival: "available",
+        current_incident_id: undefined,
+      });
+    }
   }
 }

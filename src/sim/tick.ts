@@ -43,6 +43,7 @@ function frame(): void {
         road_graph: s.road_graph,
         addresses: s.addresses,
         stations: s.stations,
+        vehicles: s.vehicles,
         events,
       });
 

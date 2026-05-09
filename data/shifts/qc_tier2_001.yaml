@@ -1,0 +1,95 @@
+id: qc_tier2_001
+date: 2026-05-09
+city: quad_cities
+difficulty_tier: 2
+length_game_min: 14
+notes: |
+  Tier 2 — denser pacing, multi-unit-heavy, first introduction of police
+  agency calls. The roster (E1 engine, L1 ladder, M1 ambulance, P1 patrol)
+  is just barely sufficient — the player will need to commit early on the
+  cardiac and stage the structure-fire response with both fire units.
+
+incidents:
+  - id: i_201
+    spawn_time_game_min: 0.5
+    type: police_traffic
+    severity: low
+    address: 215 North Main Street
+    caller_persona: Resident reporting reckless driver
+    expected_units: 1 patrol
+    required_units: [patrol]
+    resolution_window_game_min: 1.5
+
+  - id: i_202
+    spawn_time_game_min: 2.0
+    type: medical_cardiac
+    severity: high
+    address: 1008 Harrison Street
+    caller_persona: Spouse, panicked, CPR coached
+    expected_units: 1 ambulance
+    required_units: [ambulance_als]
+    resolution_window_game_min: 2.5
+    narrative_hooks:
+      - Chest pain radiating to left arm, prior MI
+
+  - id: i_203
+    spawn_time_game_min: 4.0
+    type: rescue_motor_vehicle
+    severity: moderate
+    address: 400 West 4th Street
+    caller_persona: Bystander, multi-vehicle visible
+    expected_units: 1 engine + 1 ambulance
+    required_units: [engine, ambulance_als]
+    resolution_window_game_min: 2.5
+    narrative_hooks:
+      - Three-car collision, fluid leak, possible entrapment
+
+  - id: i_204
+    spawn_time_game_min: 6.5
+    type: police_assault
+    severity: high
+    address: 318 Brady Street
+    caller_persona: Witness, ongoing dispute, voices raised
+    expected_units: 1 patrol + 1 ambulance
+    required_units: [patrol, ambulance_als]
+    resolution_window_game_min: 2.5
+    narrative_hooks:
+      - Active disturbance, one party may need transport
+
+  - id: i_205
+    spawn_time_game_min: 8.5
+    type: fire_residential
+    severity: critical
+    address: 1402 West 7th Street
+    caller_persona: Neighbor, smoke from second floor visible
+    expected_units: 1 engine + 1 ladder
+    required_units: [engine, ladder]
+    resolution_window_game_min: 3.0
+    narrative_hooks:
+      - Working structure fire, occupancy unknown
+    thread_id: t_apex
+
+  - id: i_206
+    spawn_time_game_min: 11.0
+    type: alarm_false
+    severity: low
+    address: 1122 West Central Park Avenue
+    caller_persona: Apartment manager, panel test
+    expected_units: 1 engine
+    required_units: [engine]
+    resolution_window_game_min: 1.0
+
+narrative_threads:
+  - id: t_apex
+    arc: Cascading mid-shift fire requires both fire units committed simultaneously.
+    incident_ids:
+      - i_205
+    intel_ids: []
+
+intel:
+  - id: it_qc_t2_weather
+    type: weather
+    severity: moderate
+    body: |
+      Wind 14 G 22 from SW. Visibility 7 mi. Mid-day low-moisture conditions.
+      Fire-behaviour modifier +0.1 in residential brush sectors.

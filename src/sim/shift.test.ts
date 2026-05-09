@@ -85,6 +85,7 @@ describe("spawnDueIncidents", () => {
           address: "100 Main St",
           resolution_window_game_min: 1,
           narrative_hooks: [],
+          required_units: [],
         },
         {
           id: "i_b",
@@ -94,6 +95,7 @@ describe("spawnDueIncidents", () => {
           address: "200 Main St",
           resolution_window_game_min: 2,
           narrative_hooks: [],
+          required_units: [],
         },
       ],
       intel: [],
@@ -211,6 +213,7 @@ describe("computeOutcome", () => {
       dispatched_unit_ids: [],
       resolved_at_game_min: resolved_at,
       shift_id: "qc_tier1_001",
+      required_unit_classes: [],
     };
   }
 
@@ -314,6 +317,7 @@ describe("computeOutcome", () => {
         address: "100 Main St",
         resolution_window_game_min: 1,
         narrative_hooks: [],
+        required_units: [],
       })),
       intel: [],
       narrative_threads: [],

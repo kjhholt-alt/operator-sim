@@ -99,6 +99,7 @@ function seedFloor(): { unit: Unit; incident: Incident } {
     resolution_window_game_min: 2, // short for test speed
     dispatched_unit_ids: [],
     shift_id: "test-shift",
+    required_unit_classes: [],
   };
 
   useFloor.setState({
@@ -133,6 +134,7 @@ function runTick(delta_game_min: number): void {
     road_graph: s.road_graph,
     addresses: s.addresses,
     stations: s.stations,
+    vehicles: s.vehicles,
     events,
   });
   useFloor.setState({
@@ -221,5 +223,152 @@ describe("dispatch FSM", () => {
   it("UNIT_SPEED_M_PER_GAME_MIN is set to a sensible 30-mph average", () => {
     expect(UNIT_SPEED_M_PER_GAME_MIN).toBeGreaterThan(500);
     expect(UNIT_SPEED_M_PER_GAME_MIN).toBeLessThan(2000);
+  });
+});
+
+// ── Day 8: multi-unit incidents ─────────────────────────────────────────
+
+function seedMultiUnit(): { engineUnit: Unit; ambUnit: Unit; incident: Incident } {
+  const station: Station = {
+    id: "st_a",
+    name: "Test Station",
+    agency: "fire",
+    address_id: "addr_station",
+    built_at: "2026-05-09T00:00:00Z",
+    capacity_units: 4,
+    capacity_personnel: 24,
+  };
+  const stationAddr: Address = {
+    id: "addr_station",
+    street: "Station Rd",
+    city: "Davenport",
+    state: "IA",
+    coord: STATION_COORD,
+  };
+  const sceneAddr: Address = {
+    id: "addr_scene",
+    street: "Scene Ave",
+    city: "Davenport",
+    state: "IA",
+    coord: SCENE_COORD,
+  };
+  const engineV: Vehicle = {
+    id: "v_e1", callsign: "E1", class: "engine",
+    homebase_station_id: station.id, purchased_at: "2026-05-09T00:00:00Z",
+    status: "operational", mileage_km: 0,
+  };
+  const ambV: Vehicle = {
+    id: "v_m1", callsign: "M1", class: "ambulance_als",
+    homebase_station_id: station.id, purchased_at: "2026-05-09T00:00:00Z",
+    status: "operational", mileage_km: 0,
+  };
+  const engineUnit: Unit = {
+    id: "u_e1", callsign: "E1", vehicle_id: engineV.id,
+    homebase_station_id: station.id, status: "available",
+    status_since_game_min: 0, current_position: STATION_COORD, crew: [],
+  };
+  const ambUnit: Unit = {
+    id: "u_m1", callsign: "M1", vehicle_id: ambV.id,
+    homebase_station_id: station.id, status: "available",
+    status_since_game_min: 0, current_position: STATION_COORD, crew: [],
+  };
+  const incident: Incident = {
+    id: "i_mva",
+    type: "rescue_motor_vehicle",
+    severity: "moderate",
+    status: "queued",
+    address_id: sceneAddr.id,
+    reported_at_game_min: 0,
+    resolution_window_game_min: 1.5,
+    dispatched_unit_ids: [],
+    shift_id: "test-shift",
+    required_unit_classes: ["engine", "ambulance_als"],
+  };
+  useFloor.setState({
+    speed: 1,
+    paused: false,
+    game_min: 0,
+    addresses: new Map([[stationAddr.id, stationAddr], [sceneAddr.id, sceneAddr]]),
+    stations: new Map([[station.id, station]]),
+    vehicles: new Map([[engineV.id, engineV], [ambV.id, ambV]]),
+    personnel: new Map(),
+    units: new Map([[engineUnit.id, engineUnit], [ambUnit.id, ambUnit]]),
+    incidents: new Map([[incident.id, incident]]),
+    road_graph: buildRoadGraph(SYNTH_ROADS),
+    last_event_log: [],
+  });
+  return { engineUnit, ambUnit, incident };
+}
+
+function rollUnitToOnScene(callsign: "E1" | "M1"): void {
+  for (let i = 0; i < 100; i++) {
+    runTick(0.05);
+    const u = Array.from(useFloor.getState().units.values()).find((x) => x.callsign === callsign);
+    if (u?.status === "on_scene") return;
+  }
+}
+
+describe("multi-unit incident dwell gate (Day 8)", () => {
+  beforeEach(() => {
+    useFloor.setState({
+      units: new Map(), incidents: new Map(), addresses: new Map(),
+      stations: new Map(), vehicles: new Map(), personnel: new Map(),
+      road_graph: null, game_min: 0, last_event_log: [],
+    });
+  });
+
+  it("dwell does NOT start when only the engine is on_scene (ambulance still required)", () => {
+    seedMultiUnit();
+    expect(dispatch("E1", "i_mva").ok).toBe(true);
+    rollUnitToOnScene("E1");
+    const inc = useFloor.getState().incidents.get("i_mva")!;
+    expect(inc.dwell_started_at_game_min).toBeUndefined();
+    expect(inc.status).toBe("on_scene");
+  });
+
+  it("dwell starts the moment both required classes are on_scene", () => {
+    seedMultiUnit();
+    expect(dispatch("E1", "i_mva").ok).toBe(true);
+    rollUnitToOnScene("E1");
+    expect(dispatch("M1", "i_mva").ok).toBe(true);
+    rollUnitToOnScene("M1");
+    // After M1 arrives, the next tick's Phase 3a should set dwell_started.
+    runTick(0.05);
+    const inc = useFloor.getState().incidents.get("i_mva")!;
+    expect(inc.dwell_started_at_game_min).toBeDefined();
+    expect(inc.status).toBe("on_scene"); // not yet resolved
+  });
+
+  it("incident resolves only after the resolution_window elapses past dwell_started", () => {
+    seedMultiUnit();
+    dispatch("E1", "i_mva");
+    rollUnitToOnScene("E1");
+    dispatch("M1", "i_mva");
+    rollUnitToOnScene("M1");
+    // Force a tick to set dwell_started, then run ticks until resolved.
+    runTick(0.05);
+    for (let i = 0; i < 100; i++) {
+      runTick(0.05);
+      if (useFloor.getState().incidents.get("i_mva")!.status === "resolved") break;
+    }
+    const inc = useFloor.getState().incidents.get("i_mva")!;
+    expect(inc.status).toBe("resolved");
+    expect(inc.resolved_at_game_min).toBeDefined();
+    // Both units should now be returning home.
+    const engine = useFloor.getState().units.get("u_e1")!;
+    const ambulance = useFloor.getState().units.get("u_m1")!;
+    expect(engine.status === "returning" || engine.status === "available").toBe(true);
+    expect(ambulance.status === "returning" || ambulance.status === "available").toBe(true);
+  });
+
+  it("legacy single-unit incident (required=[]) still resolves with one unit", () => {
+    // Re-uses the single-unit seedFloor() — no required_unit_classes.
+    seedFloor();
+    expect(dispatch("E1", "i_42").ok).toBe(true);
+    for (let i = 0; i < 200; i++) {
+      runTick(0.05);
+      if (useFloor.getState().incidents.get("i_42")!.status === "resolved") break;
+    }
+    expect(useFloor.getState().incidents.get("i_42")!.status).toBe("resolved");
   });
 });

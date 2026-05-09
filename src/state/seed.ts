@@ -76,59 +76,35 @@ export async function bootFloor(city = "quad_cities") {
     capacity_personnel: 24,
   };
 
-  // 1 vehicle.
-  const vehicle: Vehicle = {
-    id: "v_e1",
-    callsign: "E1",
-    class: "engine",
-    homebase_station_id: station.id,
-    purchased_at: "2026-05-09T00:00:00Z",
-    status: "operational",
-    mileage_km: 0,
-  };
-
-  // 4 firefighters.
-  const personnel: Personnel[] = [
-    { id: "p_001", name: "Lt. Diaz",   role: "lieutenant",   homebase_station_id: station.id, hire_date: "2026-03-12T00:00:00Z", skills: ["paramedic"], schedule_template: "standard", active: true },
-    { id: "p_002", name: "FF Hong",    role: "firefighter",  homebase_station_id: station.id, hire_date: "2026-03-15T00:00:00Z", skills: [], schedule_template: "standard", active: true },
-    { id: "p_003", name: "FF Patel",   role: "firefighter",  homebase_station_id: station.id, hire_date: "2026-04-02T00:00:00Z", skills: ["hazmat"], schedule_template: "standard", active: true },
-    { id: "p_004", name: "FF Walker",  role: "firefighter",  homebase_station_id: station.id, hire_date: "2026-04-18T00:00:00Z", skills: [], schedule_template: "standard", active: true },
+  // Day 8: real multi-class roster. Each unit is backed by a Vehicle record
+  // so the FSM's class-aware multi-unit requirement check (engine + ambulance
+  // for an MVA) actually resolves. Single station for now — multi-station
+  // setups land Day 9+.
+  const vehicles: Vehicle[] = [
+    { id: "v_e1",  callsign: "E1",  class: "engine",        homebase_station_id: station.id, purchased_at: "2026-05-09T00:00:00Z", status: "operational", mileage_km: 0 },
+    { id: "v_l1",  callsign: "L1",  class: "ladder",        homebase_station_id: station.id, purchased_at: "2026-05-09T00:00:00Z", status: "operational", mileage_km: 0 },
+    { id: "v_m1",  callsign: "M1",  class: "ambulance_als", homebase_station_id: station.id, purchased_at: "2026-05-09T00:00:00Z", status: "operational", mileage_km: 0 },
+    { id: "v_p1",  callsign: "P1",  class: "patrol",        homebase_station_id: station.id, purchased_at: "2026-05-09T00:00:00Z", status: "operational", mileage_km: 0 },
   ];
 
-  // 3 units, all available at shift start. The Tier-1 shift only spawns 5
-  // incidents over 12 game-min, so a single dispatcher with 3 units has
-  // comfortable slack for the relaxed pacing.
+  // 6 personnel — enough to crew all 4 units realistically.
+  const personnel: Personnel[] = [
+    { id: "p_001", name: "Lt. Diaz",    role: "lieutenant",  homebase_station_id: station.id, hire_date: "2026-03-12T00:00:00Z", skills: ["paramedic"], schedule_template: "standard", active: true },
+    { id: "p_002", name: "FF Hong",     role: "firefighter", homebase_station_id: station.id, hire_date: "2026-03-15T00:00:00Z", skills: [], schedule_template: "standard", active: true },
+    { id: "p_003", name: "FF Patel",    role: "firefighter", homebase_station_id: station.id, hire_date: "2026-04-02T00:00:00Z", skills: ["hazmat"], schedule_template: "standard", active: true },
+    { id: "p_004", name: "Medic Reyes", role: "paramedic",   homebase_station_id: station.id, hire_date: "2026-04-18T00:00:00Z", skills: ["als"], schedule_template: "standard", active: true },
+    { id: "p_005", name: "EMT Walker",  role: "emt",         homebase_station_id: station.id, hire_date: "2026-04-22T00:00:00Z", skills: [], schedule_template: "standard", active: true },
+    { id: "p_006", name: "Off. Cole",   role: "officer",     homebase_station_id: station.id, hire_date: "2026-04-29T00:00:00Z", skills: [], schedule_template: "standard", active: true },
+  ];
+
+  // 4 units, all available at shift start. Class-aware multi-unit dispatch
+  // is now possible: an MVA needs engine + ambulance, an assault needs
+  // patrol on top of EMS, etc.
   const units: Unit[] = [
-    {
-      id: "u_e1",
-      callsign: "E1",
-      vehicle_id: vehicle.id,
-      homebase_station_id: station.id,
-      status: "available",
-      status_since_game_min: 0,
-      current_position: QC_CENTER,
-      crew: ["p_001", "p_002", "p_003", "p_004"],
-    },
-    {
-      id: "u_m2",
-      callsign: "M2",
-      vehicle_id: "v_m2",
-      homebase_station_id: station.id,
-      status: "available",
-      status_since_game_min: 0,
-      current_position: QC_CENTER,
-      crew: ["p_001"],
-    },
-    {
-      id: "u_234",
-      callsign: "234",
-      vehicle_id: "v_234",
-      homebase_station_id: station.id,
-      status: "available",
-      status_since_game_min: 0,
-      current_position: QC_CENTER,
-      crew: ["p_002"],
-    },
+    { id: "u_e1",  callsign: "E1",  vehicle_id: "v_e1",  homebase_station_id: station.id, status: "available", status_since_game_min: 0, current_position: QC_CENTER, crew: ["p_001", "p_002", "p_003"] },
+    { id: "u_l1",  callsign: "L1",  vehicle_id: "v_l1",  homebase_station_id: station.id, status: "available", status_since_game_min: 0, current_position: QC_CENTER, crew: ["p_002"] },
+    { id: "u_m1",  callsign: "M1",  vehicle_id: "v_m1",  homebase_station_id: station.id, status: "available", status_since_game_min: 0, current_position: QC_CENTER, crew: ["p_004", "p_005"] },
+    { id: "u_p1",  callsign: "P1",  vehicle_id: "v_p1",  homebase_station_id: station.id, status: "available", status_since_game_min: 0, current_position: QC_CENTER, crew: ["p_006"] },
   ];
 
   // 1 demo caller — kept so the right-rail drill-down has prior data to
@@ -147,7 +123,7 @@ export async function bootFloor(city = "quad_cities") {
   useFloor.setState({
     addresses: new Map(addresses.map((a) => [a.id, a])),
     stations: new Map([[station.id, station]]),
-    vehicles: new Map([[vehicle.id, vehicle]]),
+    vehicles: new Map(vehicles.map((v) => [v.id, v])),
     personnel: new Map(personnel.map((p) => [p.id, p])),
     units: new Map(units.map((u) => [u.id, u])),
     incidents: new Map(),
