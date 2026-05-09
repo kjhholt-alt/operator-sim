@@ -55,6 +55,12 @@ export interface FloorState {
 
   // ── view ──
   selection: Selection | null;
+  // Browser-history-style nav stack. `nav_back` is past selections (oldest
+  // first); `nav_forward` holds redo-able future selections after a goBack.
+  // `select(s)` pushes the previous selection onto nav_back and clears
+  // nav_forward; `goBack` / `goForward` walk between them.
+  nav_back: Selection[];
+  nav_forward: Selection[];
   camera: Camera;
 
   // ── world geometry ──
@@ -68,6 +74,9 @@ export interface FloorState {
   setSpeed: (speed: SimSpeed) => void;
   togglePause: () => void;
   select: (sel: Selection | null) => void;
+  goBack: () => void;
+  goForward: () => void;
+  clearNav: () => void;
   setCamera: (c: Partial<Camera>) => void;
   setRoadGraph: (g: RoadGraph | null) => void;
   upsertUnit: (u: Unit) => void;
@@ -97,6 +106,8 @@ export const useFloor = create<FloorState>()(
     vehicles: new Map(),
 
     selection: null,
+    nav_back: [],
+    nav_forward: [],
     camera: { center: QC_CENTER, zoom: 12 },
 
     road_graph: null,
@@ -114,7 +125,40 @@ export const useFloor = create<FloorState>()(
       set((s) => ({ paused: !s.paused }));
     },
     select(sel) {
-      set({ selection: sel });
+      set((s) => {
+        // Idempotent — clicking the same entity is a no-op (no history churn).
+        if (
+          (sel === null && s.selection === null) ||
+          (sel && s.selection && sel.kind === s.selection.kind && sel.id === s.selection.id)
+        ) {
+          return {};
+        }
+        const back = s.selection ? [...s.nav_back, s.selection] : s.nav_back;
+        // Cap history depth so a long session doesn't unbounded-grow.
+        const trimmed = back.length > 50 ? back.slice(-50) : back;
+        return { selection: sel, nav_back: trimmed, nav_forward: [] };
+      });
+    },
+    goBack() {
+      set((s) => {
+        if (s.nav_back.length === 0) return {};
+        const prev = s.nav_back[s.nav_back.length - 1];
+        const newBack = s.nav_back.slice(0, -1);
+        const newForward = s.selection ? [...s.nav_forward, s.selection] : s.nav_forward;
+        return { selection: prev, nav_back: newBack, nav_forward: newForward };
+      });
+    },
+    goForward() {
+      set((s) => {
+        if (s.nav_forward.length === 0) return {};
+        const next = s.nav_forward[s.nav_forward.length - 1];
+        const newForward = s.nav_forward.slice(0, -1);
+        const newBack = s.selection ? [...s.nav_back, s.selection] : s.nav_back;
+        return { selection: next, nav_back: newBack, nav_forward: newForward };
+      });
+    },
+    clearNav() {
+      set({ selection: null, nav_back: [], nav_forward: [] });
     },
     setCamera(c) {
       set((s) => ({ camera: { ...s.camera, ...c } }));

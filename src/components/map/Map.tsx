@@ -74,6 +74,9 @@ function buildUnitLayer(units: Unit[]) {
     getLineColor: [255, 255, 255, 220],
     lineWidthMinPixels: 1,
     pickable: true,
+    onClick: ({ object }) => {
+      if (object) useFloor.getState().select({ kind: "unit", id: object.id });
+    },
   });
 }
 
@@ -112,6 +115,9 @@ function buildIncidentLayer(
     },
     lineWidthMinPixels: 1,
     pickable: true,
+    onClick: ({ object }) => {
+      if (object) useFloor.getState().select({ kind: "incident", id: object.id });
+    },
   });
 }
 

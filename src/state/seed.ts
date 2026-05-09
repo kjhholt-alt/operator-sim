@@ -9,7 +9,7 @@
  * Idempotent: safe to call multiple times (clears + re-seeds).
  */
 
-import type { Address, Incident, Station, Unit, Vehicle, Personnel } from "@/lib/schemas";
+import type { Address, Caller, Incident, Intel, Station, Unit, Vehicle, Personnel } from "@/lib/schemas";
 import { useFloor } from "./useFloor";
 import { loadRoadGraph } from "@/sim/roadGraph";
 
@@ -121,6 +121,17 @@ export async function bootFloor(city = "quad_cities") {
     },
   ];
 
+  // 1 demo caller — gives the right-rail drill-down something to hop to:
+  // Incident → Caller → prior_incidents (back to incident) → Address → …
+  const caller: Caller = {
+    id: "c_margaret_k",
+    display: "Margaret K., 67yo female",
+    phone: "+1 563 555 0142",
+    address_id: addresses[0]?.id,
+    prior_incidents: [],
+    notes: "Repeat caller, cardiac history. Lives alone. Daughter on speed-dial.",
+  };
+
   // 1 demo incident — sized so the response window shows on the radar.
   const demoIncidentAddress = pickFirstReal(addresses, 5)[2] ?? addresses[0];
   const incident: Incident | null = demoIncidentAddress
@@ -130,12 +141,24 @@ export async function bootFloor(city = "quad_cities") {
         severity: "high",
         status: "dispatched",
         address_id: demoIncidentAddress.id,
+        caller_id: caller.id,
         reported_at_game_min: 4.0,
         resolution_window_game_min: 6,
         dispatched_unit_ids: ["u_m2"],
         shift_id: "shift-day0-demo",
       }
     : null;
+
+  // 1 demo intel — hop target from Incident → Intel → linked entities.
+  const intel: Intel = {
+    id: "intel_qc_weather_2031",
+    type: "weather",
+    severity: "moderate",
+    body: "Wind 18 G 27 from SW. Visibility 6 mi. Fire-behaviour modifier +0.2 in brush sectors.",
+    posted_at_game_min: 0,
+    expires_at_game_min: 60,
+    linked_entity_ids: incident ? [incident.id] : [],
+  };
 
   // Hydrate the store wholesale (cleaner than per-row upserts).
   const f = useFloor.getState();
@@ -146,6 +169,8 @@ export async function bootFloor(city = "quad_cities") {
     personnel: new Map(personnel.map((p) => [p.id, p])),
     units: new Map(units.map((u) => [u.id, u])),
     incidents: new Map(incident ? [[incident.id, incident]] : []),
+    callers: new Map([[caller.id, caller]]),
+    intel: new Map([[intel.id, intel]]),
     road_graph: roadGraph,
   });
 

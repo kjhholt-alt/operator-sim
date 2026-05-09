@@ -1,0 +1,32 @@
+{
+  "username": "Operator Sim Build",
+  "embeds": [
+    {
+      "title": "Day 3 shipped — the game does something",
+      "url": "https://github.com/kjhholt-alt/operator-sim/commit/8d54a7d",
+      "description": "Open Ctrl+K, type `dispatch E1 i_2031`, press Enter. E1 routes from Davenport Central to a real address on real OSM roads, arrives, engages for the resolution window, drives home. The first time the game does anything.",
+      "color": 4185983,
+      "fields": [
+        {"name": "Commit", "value": "[`8d54a7d`](https://github.com/kjhholt-alt/operator-sim/commit/8d54a7d)", "inline": true},
+        {"name": "Build", "value": "tsc clean · 13/13 tests · vite 16s · 496 KB gz", "inline": true},
+        {"name": "Phase 1 progress", "value": "Day 0 ✅ · Day 1 ✅ · Day 2 ✅ · **Day 3 ✅** · Day 4 next", "inline": false},
+        {
+          "name": "What ships",
+          "value": "**Sim core** (`src/sim/`)\n• Road graph from baked OSM (6-decimal node quantisation, haversine edges)\n• Dijkstra shortest path on min-heap\n• Pure tickStep FSM: en_route → on_scene → resolved → returning → available\n• RAF tick loop: 4 real-sec = 1 game-min @ 1×, speed + pause respected\n\n**UI wiring**\n• Cmdk palette executes verbs on Enter: `dispatch`, `recall`, `pause`, `speed`, `focus`\n• TopStrip: live game-min clock, pause toggle, 0.5×/1×/2×/4× speed picker\n• Map: PathLayer renders active routes (amber en_route, dim returning)\n• BottomTicker: latest dispatch event with T+game-min stamp\n\n**Schema**\n• Unit gets `route_progress_m` / `route_total_m` / `destination_coord` / `on_arrival` (all optional)",
+          "inline": false
+        },
+        {
+          "name": "Tests",
+          "value": "**13/13 pass.** Pathfinding (graph build, route find, disjoint→null, walkAlong). Full FSM cycle on synthetic 5-node graph. Reject-on-busy. Reject-on-no-graph.",
+          "inline": false
+        },
+        {
+          "name": "Day 4 next",
+          "value": "Ontology drill-down: hop unit → incident → caller → address → station → personnel without losing context. Selection history. Right-rail back-button. Then Day 5: cmdk verb registry + autocomplete. Day 6: Tier 1 fully playable.",
+          "inline": false
+        }
+      ],
+      "footer": {"text": "Operator Sim · Day 3 · master @ 8d54a7d"}
+    }
+  ]
+}

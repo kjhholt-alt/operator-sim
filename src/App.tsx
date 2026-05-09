@@ -7,6 +7,7 @@ import { BottomTicker } from "@/components/shell/BottomTicker";
 import { CommandPalette } from "@/components/shell/CommandPalette";
 import { bootFloor } from "@/state/seed";
 import { startTickLoop, stopTickLoop } from "@/sim/tick";
+import { useFloor } from "@/state/useFloor";
 
 function App() {
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -25,8 +26,19 @@ function App() {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         setPaletteOpen((o) => !o);
+        return;
       }
-      if (e.key === "Escape") setPaletteOpen(false);
+      if (e.key === "Escape") {
+        setPaletteOpen(false);
+        return;
+      }
+      // Alt+Left / Alt+Right walk the right-rail dossier history.
+      if (e.altKey && (e.key === "ArrowLeft" || e.key === "ArrowRight")) {
+        e.preventDefault();
+        const s = useFloor.getState();
+        if (e.key === "ArrowLeft") s.goBack();
+        else s.goForward();
+      }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
