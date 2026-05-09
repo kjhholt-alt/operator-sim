@@ -1,0 +1,47 @@
+{
+  "username": "Operator Sim Build",
+  "embeds": [
+    {
+      "title": "Day 5 shipped — palette is now the keyboard-only path",
+      "url": "https://github.com/kjhholt-alt/operator-sim/commit/91667c6",
+      "description": "Hit Ctrl+K, type `dis`, Tab → `dispatch `, Tab → `dispatch E1 `, Tab → `dispatch E1 i_42`, Enter. Every verb declares typed slots; the palette only suggests **available** units to dispatch, only **active** incidents as targets, only **not-available** units to recall. Resolved incidents never appear. Tab is the keyboard.",
+      "color": 4185983,
+      "fields": [
+        {"name": "Commit", "value": "[`91667c6`](https://github.com/kjhholt-alt/operator-sim/commit/91667c6)", "inline": true},
+        {"name": "Build", "value": "tsc clean · 45/45 tests · vite 13s · 485 KB gz", "inline": true},
+        {"name": "Phase 1 progress", "value": "Day 0–4 ✅ · **Day 5 ✅** · Day 6 next (Tier 1 fully playable)", "inline": false},
+        {
+          "name": "Verb registry (src/sim/verbs.ts)",
+          "value": "Typed slots: `unit` / `incident` / `literal` / `speed` / `kind`. Each unit/incident slot can declare a `filter` predicate that prunes irrelevant candidates from suggestions before they're shown.",
+          "inline": false
+        },
+        {
+          "name": "8 verbs",
+          "value": "`dispatch <unit:available> <incident:active>` · `recall <unit:not-available>` · `focus <unit|incident>` · `pause` · `speed <0.5|1|2|4>` · `back` · `forward` · `clear`",
+          "inline": false
+        },
+        {
+          "name": "Palette rewrite",
+          "value": "Dropped cmdk (its filter fought slot-aware suggestions). Plain React + registry. Slot pill row appears once verb is identified — filled / active / empty pills colour-coded. Suggestion rows show display + trailing context (unit status, incident type).",
+          "inline": false
+        },
+        {
+          "name": "Keyboard",
+          "value": "↑↓ navigate · Tab apply · Enter execute · Esc close. Auto-dismiss on successful execute (350ms grace).",
+          "inline": false
+        },
+        {
+          "name": "Tests",
+          "value": "**45/45 pass.** Verbs (23 new): parser corner cases (empty / partial / trailing-space / mid-arg), suggestForInput filtering by state AND partial prefix, applySuggestion trailing-space logic, executeInput happy paths + missing-slot rejection.",
+          "inline": false
+        },
+        {
+          "name": "Day 6 next",
+          "value": "Tier 1 fully playable. First real shift YAML loaded by the validator from Day 1, spawn timeline driving incidents into the queue at scheduled game-min, win/loss summary on shift end.",
+          "inline": false
+        }
+      ],
+      "footer": {"text": "Operator Sim · Day 5 · master @ 91667c6"}
+    }
+  ]
+}

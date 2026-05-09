@@ -5,6 +5,7 @@ import { CenterMap } from "@/components/shell/CenterMap";
 import { RightRail } from "@/components/shell/RightRail";
 import { BottomTicker } from "@/components/shell/BottomTicker";
 import { CommandPalette } from "@/components/shell/CommandPalette";
+import { ShiftSummary } from "@/components/shell/ShiftSummary";
 import { bootFloor } from "@/state/seed";
 import { startTickLoop, stopTickLoop } from "@/sim/tick";
 import { useFloor } from "@/state/useFloor";
@@ -54,6 +55,7 @@ function App() {
       </div>
       <BottomTicker />
       <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
+      <ShiftSummary />
     </div>
   );
 }

@@ -18,11 +18,13 @@ import type {
   Incident,
   Intel,
   Personnel,
+  Shift,
   Station,
   Unit,
   Vehicle,
 } from "@/lib/schemas";
 import type { RoadGraph } from "@/sim/roadGraph";
+import type { ShiftOutcome } from "@/sim/shift";
 
 export type SimSpeed = 0 | 0.5 | 1 | 2 | 4;
 
@@ -36,12 +38,24 @@ export interface Camera {
   zoom: number;
 }
 
+export type ShiftStatus = "idle" | "running" | "complete";
+
 export interface FloorState {
   // ── time ──
   speed: SimSpeed;
   paused: boolean;
   game_min: number; // fractional minutes since shift start
   shift_id: string | null;
+
+  // ── shift ──
+  // The loaded shift definition (immutable per session). Null until loadShift
+  // is called. Drives the spawn timeline + scoring at end-of-shift.
+  shift: Shift | null;
+  shift_status: ShiftStatus;
+  // Set of ShiftIncident.id that have already been promoted to live incidents.
+  // Used by spawnDueIncidents to make the spawn step idempotent across ticks.
+  incidents_spawned: Set<string>;
+  shift_outcome: ShiftOutcome | null;
 
   // ── working set ──
   units: Map<string, Unit>;
@@ -83,6 +97,12 @@ export interface FloorState {
   upsertIncident: (i: Incident) => void;
   logEvent: (text: string) => void;
 
+  // ── shift actions ──
+  loadShift: (shift: Shift) => void;
+  markIncidentSpawned: (shift_incident_id: string) => void;
+  completeShift: (outcome: ShiftOutcome) => void;
+  dismissShiftOutcome: () => void;
+
   // ── derived ──
   getEntity: (kind: EntityKind, id: string) => AnyEntity | null;
 }
@@ -95,6 +115,11 @@ export const useFloor = create<FloorState>()(
     paused: false,
     game_min: 0,
     shift_id: null,
+
+    shift: null,
+    shift_status: "idle",
+    incidents_spawned: new Set(),
+    shift_outcome: null,
 
     units: new Map(),
     incidents: new Map(),
@@ -187,6 +212,29 @@ export const useFloor = create<FloorState>()(
           ...s.last_event_log,
         ].slice(0, 200),
       }));
+    },
+
+    loadShift(shift) {
+      set({
+        shift,
+        shift_id: shift.id,
+        shift_status: "running",
+        incidents_spawned: new Set(),
+        shift_outcome: null,
+      });
+    },
+    markIncidentSpawned(shift_incident_id) {
+      set((s) => {
+        const next = new Set(s.incidents_spawned);
+        next.add(shift_incident_id);
+        return { incidents_spawned: next };
+      });
+    },
+    completeShift(outcome) {
+      set({ shift_status: "complete", shift_outcome: outcome, paused: true });
+    },
+    dismissShiftOutcome() {
+      set({ shift_outcome: null });
     },
 
     getEntity(kind, id) {

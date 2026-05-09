@@ -2,16 +2,22 @@
 /**
  * Operator Sim — boot-time seed.
  *
- * Loads baked OSM addresses for the active city and inserts demo entities
- * (1 station, 3 units, 1 incident) so the floor has something to look at
- * before the dispatch FSM is wired Day 3.
+ * Day 6: hydrates the floor with the baked OSM dataset (addresses, road graph)
+ * + the static roster (1 station, 3 units, 4 personnel) and arms the Tier-1
+ * shift driver. Live incidents are NOT seeded — they spawn from the YAML's
+ * spawn timeline as game time advances.
  *
  * Idempotent: safe to call multiple times (clears + re-seeds).
  */
 
-import type { Address, Caller, Incident, Intel, Station, Unit, Vehicle, Personnel } from "@/lib/schemas";
+import type { Address, Caller, Station, Unit, Vehicle, Personnel } from "@/lib/schemas";
 import { useFloor } from "./useFloor";
 import { loadRoadGraph } from "@/sim/roadGraph";
+import { buildShiftIntel, parseShift } from "@/sim/shift";
+// Vite `?raw` import → bundle the YAML at build time. Keeps the player from
+// having to fetch /data/shifts/* at runtime and lets us ship the shift inside
+// the SPA bundle.
+import qcTier1Yaml from "../../data/shifts/qc_tier1_001.yaml?raw";
 
 const QC_CENTER: [number, number] = [-90.5776, 41.5236];
 
@@ -47,15 +53,17 @@ async function loadAddresses(city: string): Promise<Address[]> {
   }
 }
 
-function pickFirstReal<T>(arr: T[], n: number): T[] {
-  return arr.slice(0, n);
-}
-
 export async function bootFloor(city = "quad_cities") {
   const [addresses, roadGraph] = await Promise.all([
     loadAddresses(city),
     loadRoadGraph(`${import.meta.env.BASE_URL}data/${city}/roads.geojson`),
   ]);
+
+  // Day 6: parse the shipped Tier-1 shift YAML (Zod-validated). Shift incidents
+  // are NOT pushed into the live `incidents` Map at boot — they wait in the
+  // shift's spawn timeline and arrive on tick when game_min ≥ spawn_time.
+  const shift = parseShift(qcTier1Yaml);
+  const shiftIntel = buildShiftIntel(shift);
 
   // 1 station @ QC center (Davenport core).
   const station: Station = {
@@ -87,7 +95,9 @@ export async function bootFloor(city = "quad_cities") {
     { id: "p_004", name: "FF Walker",  role: "firefighter",  homebase_station_id: station.id, hire_date: "2026-04-18T00:00:00Z", skills: [], schedule_template: "standard", active: true },
   ];
 
-  // 3 units in different states so the legend is meaningful at boot.
+  // 3 units, all available at shift start. The Tier-1 shift only spawns 5
+  // incidents over 12 game-min, so a single dispatcher with 3 units has
+  // comfortable slack for the relaxed pacing.
   const units: Unit[] = [
     {
       id: "u_e1",
@@ -104,9 +114,9 @@ export async function bootFloor(city = "quad_cities") {
       callsign: "M2",
       vehicle_id: "v_m2",
       homebase_station_id: station.id,
-      status: "en_route",
-      status_since_game_min: 1.2,
-      current_position: [QC_CENTER[0] - 0.012, QC_CENTER[1] + 0.004],
+      status: "available",
+      status_since_game_min: 0,
+      current_position: QC_CENTER,
       crew: ["p_001"],
     },
     {
@@ -114,15 +124,15 @@ export async function bootFloor(city = "quad_cities") {
       callsign: "234",
       vehicle_id: "v_234",
       homebase_station_id: station.id,
-      status: "on_scene",
-      status_since_game_min: 4.5,
-      current_position: [QC_CENTER[0] + 0.005, QC_CENTER[1] - 0.008],
+      status: "available",
+      status_since_game_min: 0,
+      current_position: QC_CENTER,
       crew: ["p_002"],
     },
   ];
 
-  // 1 demo caller — gives the right-rail drill-down something to hop to:
-  // Incident → Caller → prior_incidents (back to incident) → Address → …
+  // 1 demo caller — kept so the right-rail drill-down has prior data to
+  // wander into, even though the shift's spawned incidents won't link to it.
   const caller: Caller = {
     id: "c_margaret_k",
     display: "Margaret K., 67yo female",
@@ -130,34 +140,6 @@ export async function bootFloor(city = "quad_cities") {
     address_id: addresses[0]?.id,
     prior_incidents: [],
     notes: "Repeat caller, cardiac history. Lives alone. Daughter on speed-dial.",
-  };
-
-  // 1 demo incident — sized so the response window shows on the radar.
-  const demoIncidentAddress = pickFirstReal(addresses, 5)[2] ?? addresses[0];
-  const incident: Incident | null = demoIncidentAddress
-    ? {
-        id: "i_2031",
-        type: "medical_cardiac",
-        severity: "high",
-        status: "dispatched",
-        address_id: demoIncidentAddress.id,
-        caller_id: caller.id,
-        reported_at_game_min: 4.0,
-        resolution_window_game_min: 6,
-        dispatched_unit_ids: ["u_m2"],
-        shift_id: "shift-day0-demo",
-      }
-    : null;
-
-  // 1 demo intel — hop target from Incident → Intel → linked entities.
-  const intel: Intel = {
-    id: "intel_qc_weather_2031",
-    type: "weather",
-    severity: "moderate",
-    body: "Wind 18 G 27 from SW. Visibility 6 mi. Fire-behaviour modifier +0.2 in brush sectors.",
-    posted_at_game_min: 0,
-    expires_at_game_min: 60,
-    linked_entity_ids: incident ? [incident.id] : [],
   };
 
   // Hydrate the store wholesale (cleaner than per-row upserts).
@@ -168,16 +150,21 @@ export async function bootFloor(city = "quad_cities") {
     vehicles: new Map([[vehicle.id, vehicle]]),
     personnel: new Map(personnel.map((p) => [p.id, p])),
     units: new Map(units.map((u) => [u.id, u])),
-    incidents: new Map(incident ? [[incident.id, incident]] : []),
+    incidents: new Map(),
     callers: new Map([[caller.id, caller]]),
-    intel: new Map([[intel.id, intel]]),
+    intel: new Map(shiftIntel.map((it) => [it.id, it])),
     road_graph: roadGraph,
+    game_min: 0,
   });
+
+  // Day 6: arm the shift driver. Once `loadShift` flips status to "running",
+  // `spawnDueIncidents` will start firing in the tick loop.
+  f.loadShift(shift);
 
   const graphSummary = roadGraph
     ? `${roadGraph.nodes.size} nodes`
     : "no road graph";
   f.logEvent(
-    `boot — ${addresses.length} addresses, ${units.length} units, ${incident ? 1 : 0} incident, ${graphSummary}`,
+    `boot — shift ${shift.id} (tier ${shift.difficulty_tier}, ${shift.length_game_min} min, ${shift.incidents.length} incidents) loaded · ${addresses.length} addrs · ${graphSummary}`,
   );
 }

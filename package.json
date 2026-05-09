@@ -1,7 +1,7 @@
 {
   "name": "operator-sim",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.0.6",
   "type": "module",
   "description": "Operator Sim — Foundry-grade dispatch sim. Real-OSM map, command fire/EMS/police/SWAT, Palantir-aesthetic operator console. Steam EA target 2026-12-31.",
   "scripts": {
@@ -55,6 +55,7 @@
     "recharts": "^3.8.1",
     "tailwind-merge": "^3.0.1",
     "tailwindcss": "^4.2.2",
+    "yaml": "^2.8.4",
     "zod": "^3.24.1",
     "zustand": "^5.0.3"
   },
@@ -68,7 +69,6 @@
     "jsdom": "^26.0.0",
     "typescript": "~5.8.3",
     "vite": "^7.0.4",
-    "vitest": "^3.0.0",
-    "yaml": "^2.8.4"
+    "vitest": "^3.0.0"
   }
 }

@@ -1,0 +1,81 @@
+id: qc_tier1_001
+date: 2026-05-09
+city: quad_cities
+difficulty_tier: 1
+length_game_min: 12
+notes: |
+  First playable shift. Tier 1 = relaxed pacing — incidents are spaced
+  so a single engine can handle the whole queue if you dispatch promptly.
+  Designed to be a 48-real-second introduction at 1× speed.
+
+incidents:
+  - id: i_001
+    spawn_time_game_min: 0.5
+    type: alarm_false
+    severity: low
+    address: 1122 West Central Park Avenue
+    caller_persona: Apartment manager, calm, automated alarm
+    expected_units: 1 engine
+    resolution_window_game_min: 1.5
+    narrative_hooks:
+      - Standard panel test, no smoke seen
+    thread_id: t_warmup
+
+  - id: i_002
+    spawn_time_game_min: 2.5
+    type: medical_general
+    severity: moderate
+    address: 215 North Main Street
+    caller_persona: Coworker, mid-30s, concerned
+    expected_units: 1 ambulance or engine
+    resolution_window_game_min: 2.5
+    narrative_hooks:
+      - Diabetic episode, conscious, sitting upright
+
+  - id: i_003
+    spawn_time_game_min: 4.5
+    type: rescue_motor_vehicle
+    severity: moderate
+    address: 400 West 4th Street
+    caller_persona: Driver involved, shaken but uninjured
+    expected_units: 1 engine + 1 ambulance
+    resolution_window_game_min: 2.5
+    narrative_hooks:
+      - Two-car fender bender, no entrapment, fluid leak
+
+  - id: i_004
+    spawn_time_game_min: 7.0
+    type: medical_cardiac
+    severity: high
+    address: 1008 Harrison Street
+    caller_persona: Spouse, panicked, CPR coached
+    expected_units: 1 ambulance, code 3
+    resolution_window_game_min: 3.0
+    narrative_hooks:
+      - Chest pain radiating to left arm, diaphoretic, prior MI
+
+  - id: i_005
+    spawn_time_game_min: 9.5
+    type: service_call
+    severity: low
+    address: 314 Main Street
+    caller_persona: Bystander, non-urgent
+    expected_units: 1 engine
+    resolution_window_game_min: 1.5
+    narrative_hooks:
+      - Tree branch on roadway, traffic cleared
+
+narrative_threads:
+  - id: t_warmup
+    arc: Quiet morning broken by routine alarm — sets the tone.
+    incident_ids:
+      - i_001
+    intel_ids: []
+
+intel:
+  - id: it_qc_morning_weather
+    type: weather
+    severity: low
+    body: |
+      Wind 8 from W. Visibility 10 mi. No precip. Routine spring morning.
+      No fire-behaviour modifiers in effect.
