@@ -15,8 +15,10 @@ import type {
   Caller,
   Coord,
   EntityKind,
+  Hostile,
   Incident,
   Intel,
+  Objective,
   Personnel,
   Shift,
   Station,
@@ -88,6 +90,12 @@ export interface FloorState {
   intel: Map<string, Intel>;
   stations: Map<string, Station>;
   vehicles: Map<string, Vehicle>;
+  // ── war-smoke (Day 12.5) ──
+  // Only populated when boot() detects ?campaign=mosul. Empty for civil
+  // dispatch flow. Same chassis, different scenario.
+  hostiles: Map<string, Hostile>;
+  objectives: Map<string, Objective>;
+  campaign: "civil_dispatch" | "command_ops";
 
   // ── view ──
   selection: Selection | null;
@@ -126,6 +134,9 @@ export interface FloorState {
   setRoadGraph: (g: RoadGraph | null) => void;
   upsertUnit: (u: Unit) => void;
   upsertIncident: (i: Incident) => void;
+  upsertHostile: (h: Hostile) => void;
+  upsertObjective: (o: Objective) => void;
+  setCampaign: (c: "civil_dispatch" | "command_ops") => void;
   logEvent: (text: string) => void;
 
   // ── view-mode actions (Day 13) ──
@@ -175,6 +186,9 @@ export const useFloor = create<FloorState>()(
     intel: new Map(),
     stations: new Map(),
     vehicles: new Map(),
+    hostiles: new Map(),
+    objectives: new Map(),
+    campaign: "civil_dispatch",
 
     selection: null,
     nav_back: [],
@@ -253,6 +267,23 @@ export const useFloor = create<FloorState>()(
         next.set(i.id, i);
         return { incidents: next };
       });
+    },
+    upsertHostile(h) {
+      set((s) => {
+        const next = new Map(s.hostiles);
+        next.set(h.id, h);
+        return { hostiles: next };
+      });
+    },
+    upsertObjective(o) {
+      set((s) => {
+        const next = new Map(s.objectives);
+        next.set(o.id, o);
+        return { objectives: next };
+      });
+    },
+    setCampaign(c) {
+      set({ campaign: c });
     },
     logEvent(text) {
       set((s) => ({
@@ -369,6 +400,8 @@ export const useFloor = create<FloorState>()(
           case "intel": return s.intel;
           case "station": return s.stations;
           case "vehicle": return s.vehicles;
+          case "hostile": return s.hostiles;
+          case "objective": return s.objectives;
         }
       })();
       const data = map.get(id);

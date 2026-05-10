@@ -30,6 +30,11 @@ export const EntityKind = z.enum([
   "intel",
   "station",
   "vehicle",
+  // Day 12.5 — war-smoke. Only populated when a "command_ops" campaign
+  // boots (see src/state/mosulCampaign.ts). The civil dispatch flow
+  // ignores these maps entirely.
+  "hostile",
+  "objective",
 ]);
 export type EntityKind = z.infer<typeof EntityKind>;
 
@@ -275,6 +280,92 @@ export const Shift = z.object({
 });
 export type Shift = z.infer<typeof Shift>;
 
+// ── Day 12.5 (war smoke): Hostile + Objective entities ─────────────────
+//
+// These two schemas are the smallest viable extension of the chassis to
+// see if the Palantir-style command-ops vision actually feels right.
+// They live alongside (not instead of) the civil entities. A campaign
+// boots either with the civil dispatch seed or the Mosul command-ops
+// seed; the chassis is identical either way.
+
+export const HostileType = z.enum([
+  "insurgent_cell",     // confirmed cluster of armed combatants at a site
+  "ied_emplaced",       // device suspected at coord
+  "vbied",              // vehicle-borne, last-known position
+  "sniper_position",    // overwatch threat
+  "weapons_cache",      // armory, intel-collection target
+  "hvt",                // high-value target
+]);
+export type HostileType = z.infer<typeof HostileType>;
+
+export const HostileStatus = z.enum([
+  "suspected",   // intel only, low confidence
+  "confirmed",   // multiple-source verified
+  "engaged",     // friendly assets in contact
+  "neutralized", // resolved (captured/killed/cleared)
+]);
+export type HostileStatus = z.infer<typeof HostileStatus>;
+
+export const Hostile = z.object({
+  id: z.string(),
+  type: HostileType,
+  status: HostileStatus,
+  severity: IncidentSeverity, // re-used for kinetic threat level
+  // Last-known coord (Palantir-style "we believe they're here").
+  coord: Coord,
+  // Game-min the last position was reported. Drives intel decay.
+  last_known_at_game_min: GameMin,
+  // 0..1, drives the dossier confidence bar + map glyph opacity.
+  intel_confidence: z.number().min(0).max(1),
+  // Linked Intel ids supporting this contact (HUMINT, SIGINT, IMINT).
+  linked_intel_ids: z.array(z.string()).default([]),
+  // Free text — sitrep, callsign of source, vehicle description, etc.
+  notes: z.string().optional(),
+  // If currently engaged, the Objective being prosecuted on it.
+  active_objective_id: z.string().optional(),
+});
+export type Hostile = z.infer<typeof Hostile>;
+
+export const ObjectiveType = z.enum([
+  "raid",              // direct action on a hostile site
+  "overwatch",         // hold a position with eyes on a target
+  "intel_collection",  // surveil → confirm → exploit
+  "ied_clear",         // EOD route clearance
+  "exfil_civilian",    // pull non-combatants from a hot zone
+  "sigint_intercept",  // tap a comms node
+]);
+export type ObjectiveType = z.infer<typeof ObjectiveType>;
+
+export const ObjectiveStatus = z.enum([
+  "planned",      // mission card on the wall, not started
+  "active",       // unit(s) tasked, in progress
+  "complete",     // success
+  "failed",       // mission window expired or hostile escaped
+  "aborted",      // operator pulled back
+]);
+export type ObjectiveStatus = z.infer<typeof ObjectiveStatus>;
+
+export const Objective = z.object({
+  id: z.string(),
+  type: ObjectiveType,
+  status: ObjectiveStatus,
+  severity: IncidentSeverity,
+  address_id: z.string(), // co-located with an address (FOB-relative)
+  // Hostile this objective is prosecuting (optional — exfil + sigint
+  // don't always map to a specific hostile).
+  hostile_id: z.string().optional(),
+  briefed_at_game_min: GameMin,
+  // Mission window in game-minutes from briefed → success deadline.
+  kpi_window_game_min: GameMin,
+  // Required vehicle classes (re-uses civil chassis). Empty = single-unit.
+  required_unit_classes: z.array(VehicleClass).default([]),
+  tasked_unit_ids: z.array(z.string()).default([]),
+  resolved_at_game_min: GameMin.optional(),
+  // Free text — ROE, intel summary, civilian considerations.
+  brief: z.string().optional(),
+});
+export type Objective = z.infer<typeof Objective>;
+
 // ── Aggregate union (for ontology browser) ──────────────────────────────
 
 export const AnyEntity = z.discriminatedUnion("kind", [
@@ -286,5 +377,7 @@ export const AnyEntity = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("intel"), data: Intel }),
   z.object({ kind: z.literal("station"), data: Station }),
   z.object({ kind: z.literal("vehicle"), data: Vehicle }),
+  z.object({ kind: z.literal("hostile"), data: Hostile }),
+  z.object({ kind: z.literal("objective"), data: Objective }),
 ]);
 export type AnyEntity = z.infer<typeof AnyEntity>;

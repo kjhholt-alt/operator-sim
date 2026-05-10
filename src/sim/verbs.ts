@@ -13,7 +13,7 @@
 import { useFloor } from "@/state/useFloor";
 import { dispatch, sendHome } from "./dispatch";
 import { assignClosest } from "./assign";
-import type { EntityKind, Incident, Unit } from "@/lib/schemas";
+import type { EntityKind, Hostile, Incident, Objective, Unit } from "@/lib/schemas";
 
 // ── Slots ──────────────────────────────────────────────────────────────
 
@@ -45,6 +45,17 @@ export type Slot =
   | {
       name: string;
       kind: "shift"; // available_shifts[].id
+    }
+  // Day 12.5 (war-smoke) — hostile + objective slots. Filter optional.
+  | {
+      name: string;
+      kind: "hostile";
+      filter?: (h: Hostile) => boolean;
+    }
+  | {
+      name: string;
+      kind: "objective";
+      filter?: (o: Objective) => boolean;
     };
 
 export interface Suggestion {
@@ -297,6 +308,149 @@ const lobbyVerb: Verb = {
   },
 };
 
+// ── Day 12.5 (war-smoke): task + surveil verbs ────────────────────────
+//
+// These two verbs prove the chassis stretches into command-ops:
+//
+//   task <unit> <objective>
+//     Assigns an available unit to a planned/active objective. Mirrors
+//     dispatch but routes to the objective's address and flips the
+//     objective to "active". Stubbed combat resolution — the unit
+//     drives there, dwells, and the event log narrates contact.
+//
+//   surveil <hostile>
+//     Bumps the hostile's intel_confidence by +0.20 (clamped 0..1).
+//     Logs a SIGINT-style event line so the ticker shows the
+//     intelligence operation. No physical unit movement — this is
+//     the "surveillance asset already on station" abstraction.
+//
+// Both are non-destructive: they don't remove civil verbs; civil
+// dispatch flows through the same chassis untouched.
+
+const taskVerb: Verb = {
+  id: "task",
+  label: "task unit to objective",
+  description: "Assign an available unit to prosecute a planned/active objective.",
+  slots: [
+    { name: "unit", kind: "unit", filter: (u) => u.status === "available" },
+    {
+      name: "objective",
+      kind: "objective",
+      filter: (o) => o.status === "planned" || o.status === "active",
+    },
+  ],
+  run: ([unitArg, objArg]) => {
+    const s = useFloor.getState();
+    // Resolve unit by id or callsign.
+    const upper = unitArg.toUpperCase();
+    let unit: Unit | null = null;
+    if (s.units.has(unitArg)) unit = s.units.get(unitArg)!;
+    else for (const u of s.units.values()) if (u.callsign.toUpperCase() === upper) unit = u;
+    if (!unit) return { ok: false, reason: `unknown unit ${unitArg}` };
+    if (unit.status !== "available") return { ok: false, reason: `${unit.callsign} not available` };
+
+    const obj = s.objectives.get(objArg);
+    if (!obj) return { ok: false, reason: `unknown objective ${objArg}` };
+    if (obj.status === "complete" || obj.status === "failed" || obj.status === "aborted") {
+      return { ok: false, reason: `objective ${objArg} closed (${obj.status})` };
+    }
+
+    const addr = s.addresses.get(obj.address_id);
+    if (!addr) return { ok: false, reason: `objective address missing` };
+
+    // Two paths:
+    //
+    //   A. Road graph loaded → re-use the civil dispatch FSM by
+    //      synthesising an incident at the objective's address and
+    //      routing the unit through pathfinding. Phase 2 promotes
+    //      this to a real combat resolution loop.
+    //
+    //   B. No road graph (smoke test, Mosul boot) → just flip the
+    //      objective to active, link the unit, and log the task. The
+    //      unit doesn't physically move; this is the abstraction
+    //      where ISR-driven C2 just *says* "go" and the result is
+    //      narrated by the event log. Good enough to prove the
+    //      ontology + verb chassis feels right.
+    let route_text = "tasked";
+    if (s.road_graph) {
+      const synthIncidentId = `obj_${obj.id}`;
+      if (!s.incidents.has(synthIncidentId)) {
+        s.upsertIncident({
+          id: synthIncidentId,
+          type: "service_call", // closest civil mapping; visual only
+          severity: obj.severity,
+          status: "queued",
+          address_id: obj.address_id,
+          reported_at_game_min: obj.briefed_at_game_min,
+          resolution_window_game_min: obj.kpi_window_game_min,
+          dispatched_unit_ids: [],
+          shift_id: s.shift_id ?? "command_ops",
+          required_unit_classes: obj.required_unit_classes,
+        });
+      }
+      const r = dispatch(unit.callsign, synthIncidentId);
+      if (!r.ok) return { ok: false, reason: r.reason };
+      route_text = `${(r.route_m / 1000).toFixed(2)} km`;
+    } else {
+      // Tactical-abstraction path: mark unit as on-scene at the address.
+      s.upsertUnit({
+        ...unit,
+        status: "on_scene",
+        status_since_game_min: s.game_min,
+        current_position: addr.coord,
+      });
+    }
+
+    // Flip objective to active and link the tasked unit.
+    s.upsertObjective({
+      ...obj,
+      status: "active",
+      tasked_unit_ids: Array.from(new Set([...obj.tasked_unit_ids, unit.id])),
+    });
+    s.logEvent(`task · ${unit.callsign} → ${obj.id} (${addr.street})`);
+    return { ok: true, text: `${unit.callsign} → ${obj.id} · ${route_text}` };
+  },
+};
+
+const surveilVerb: Verb = {
+  id: "surveil",
+  label: "boost hostile intel confidence",
+  description: "Apply ISR/SIGINT to a hostile contact, raising intel confidence by 20%.",
+  slots: [
+    {
+      name: "hostile",
+      kind: "hostile",
+      filter: (h) => h.status !== "neutralized",
+    },
+  ],
+  run: ([hostArg]) => {
+    const s = useFloor.getState();
+    const h = s.hostiles.get(hostArg);
+    if (!h) return { ok: false, reason: `unknown hostile ${hostArg}` };
+    if (h.status === "neutralized") {
+      return { ok: false, reason: `${h.id} already neutralized` };
+    }
+    const next_confidence = Math.min(1, h.intel_confidence + 0.20);
+    // Promote suspected → confirmed when confidence crosses 0.7.
+    const next_status =
+      h.status === "suspected" && next_confidence >= 0.7 ? "confirmed" : h.status;
+    s.upsertHostile({
+      ...h,
+      intel_confidence: next_confidence,
+      status: next_status,
+      last_known_at_game_min: s.game_min,
+    });
+    const promoted = next_status !== h.status ? " · CONFIRMED" : "";
+    s.logEvent(
+      `surveil · ${h.id} confidence ${(h.intel_confidence * 100).toFixed(0)}% → ${(next_confidence * 100).toFixed(0)}%${promoted}`,
+    );
+    return {
+      ok: true,
+      text: `${h.id} ${(next_confidence * 100).toFixed(0)}%${promoted}`,
+    };
+  },
+};
+
 export const VERBS: readonly Verb[] = [
   dispatchVerb,
   assignVerb,
@@ -308,6 +462,8 @@ export const VERBS: readonly Verb[] = [
   restartVerb,
   endShiftVerb,
   lobbyVerb,
+  taskVerb,
+  surveilVerb,
   backVerb,
   forwardVerb,
   clearSelectionVerb,
@@ -441,6 +597,36 @@ export function suggestForInput(parsed: ParsedInput): Suggestion[] {
         display: sh.id,
         trailing: `tier ${sh.difficulty_tier} · ${sh.length_game_min} min · ${sh.incidents.length} inc`,
       }));
+  }
+
+  if (slot.kind === "hostile") {
+    const out: Suggestion[] = [];
+    for (const h of s.hostiles.values()) {
+      if (slot.filter && !slot.filter(h)) continue;
+      if (partial.length === 0 || h.id.toLowerCase().includes(partial)) {
+        out.push({
+          token: h.id,
+          display: h.id,
+          trailing: `${h.type.replace(/_/g, " ")} · ${h.status} · ${(h.intel_confidence * 100).toFixed(0)}%`,
+        });
+      }
+    }
+    return out;
+  }
+
+  if (slot.kind === "objective") {
+    const out: Suggestion[] = [];
+    for (const o of s.objectives.values()) {
+      if (slot.filter && !slot.filter(o)) continue;
+      if (partial.length === 0 || o.id.toLowerCase().includes(partial)) {
+        out.push({
+          token: o.id,
+          display: o.id,
+          trailing: `${o.type.replace(/_/g, " ")} · ${o.status} · ${o.kpi_window_game_min}m`,
+        });
+      }
+    }
+    return out;
   }
 
   return [];

@@ -21,19 +21,36 @@ export function LeftRail({ className }: Props) {
   const callers = useFloor((s) => s.callers);
   const vehicles = useFloor((s) => s.vehicles);
   const addresses = useFloor((s) => s.addresses);
+  const hostiles = useFloor((s) => s.hostiles);
+  const objectives = useFloor((s) => s.objectives);
+  const campaign = useFloor((s) => s.campaign);
   const select = useFloor((s) => s.select);
   const selection = useFloor((s) => s.selection);
 
-  const sections: SectionRow[] = [
-    { label: "UNITS", kind: "unit", count: units.size },
-    { label: "INCIDENTS", kind: "incident", count: incidents.size },
-    { label: "STATIONS", kind: "station", count: stations.size },
-    { label: "PERSONNEL", kind: "personnel", count: personnel.size },
-    { label: "VEHICLES", kind: "vehicle", count: vehicles.size },
-    { label: "CALLERS", kind: "caller", count: callers.size },
-    { label: "INTEL", kind: "intel", count: intel.size },
-    { label: "ADDRESSES", kind: "address", count: addresses.size },
-  ];
+  // Day 12.5: hostiles/objectives only appear in the command-ops campaign.
+  // Civil dispatch keeps the original 8-section ontology to avoid clutter.
+  const isOps = campaign === "command_ops";
+  const sections: SectionRow[] = isOps
+    ? [
+        { label: "HOSTILES", kind: "hostile", count: hostiles.size },
+        { label: "OBJECTIVES", kind: "objective", count: objectives.size },
+        { label: "UNITS", kind: "unit", count: units.size },
+        { label: "INTEL", kind: "intel", count: intel.size },
+        { label: "PERSONNEL", kind: "personnel", count: personnel.size },
+        { label: "VEHICLES", kind: "vehicle", count: vehicles.size },
+        { label: "STATIONS", kind: "station", count: stations.size },
+        { label: "ADDRESSES", kind: "address", count: addresses.size },
+      ]
+    : [
+        { label: "UNITS", kind: "unit", count: units.size },
+        { label: "INCIDENTS", kind: "incident", count: incidents.size },
+        { label: "STATIONS", kind: "station", count: stations.size },
+        { label: "PERSONNEL", kind: "personnel", count: personnel.size },
+        { label: "VEHICLES", kind: "vehicle", count: vehicles.size },
+        { label: "CALLERS", kind: "caller", count: callers.size },
+        { label: "INTEL", kind: "intel", count: intel.size },
+        { label: "ADDRESSES", kind: "address", count: addresses.size },
+      ];
 
   // Returned as a generic identifiable map; per-kind shape is recovered via
   // labelFor / trailingFor below. TypeScript can't preserve the union neatly.
@@ -47,6 +64,8 @@ export function LeftRail({ className }: Props) {
       case "caller": return callers as unknown as Map<string, { id: string }>;
       case "intel": return intel as unknown as Map<string, { id: string }>;
       case "address": return addresses as unknown as Map<string, { id: string }>;
+      case "hostile": return hostiles as unknown as Map<string, { id: string }>;
+      case "objective": return objectives as unknown as Map<string, { id: string }>;
     }
   }
 
@@ -58,6 +77,8 @@ export function LeftRail({ className }: Props) {
     if (kind === "caller") return String(x.display ?? x.id);
     if (kind === "address") return String(x.street ?? x.id);
     if (kind === "intel") return String(x.type ?? x.id);
+    if (kind === "hostile") return String(x.id);
+    if (kind === "objective") return String(x.id);
     return String(x.id);
   }
 
@@ -66,6 +87,8 @@ export function LeftRail({ className }: Props) {
     if (kind === "unit") return String(x.status).replace(/_/g, " ");
     if (kind === "incident") return String(x.status).replace(/_/g, " ");
     if (kind === "intel") return String(x.severity);
+    if (kind === "hostile") return String(x.status).replace(/_/g, " ");
+    if (kind === "objective") return String(x.status).replace(/_/g, " ");
     return null;
   }
 

@@ -15,6 +15,7 @@ import type { Address, Caller, Coord, Station, Unit, Vehicle, Personnel } from "
 import { useFloor } from "./useFloor";
 import { loadRoadGraph } from "@/sim/roadGraph";
 import { parseShift } from "@/sim/shift";
+import { bootMosulCampaign, detectCampaignFromUrl } from "./mosulCampaign";
 // Vite `?raw` imports → bundle each YAML at build time. SPA-only; no runtime
 // fetch needed.
 import qcTier1Yaml from "../../data/shifts/qc_tier1_001.yaml?raw";
@@ -56,6 +57,14 @@ async function loadAddresses(city: string): Promise<Address[]> {
 }
 
 export async function bootFloor(city = "quad_cities") {
+  // Day 12.5 (war-smoke): if ?campaign=mosul (or command_ops/war) is set
+  // in the URL, take the command-ops branch entirely. We don't merge —
+  // it's a different scenario, different roster, different ontology.
+  if (detectCampaignFromUrl() === "command_ops") {
+    bootMosulCampaign();
+    return;
+  }
+
   const [addresses, roadGraph] = await Promise.all([
     loadAddresses(city),
     loadRoadGraph(`${import.meta.env.BASE_URL}data/${city}/roads.geojson`),
@@ -155,6 +164,9 @@ export async function bootFloor(city = "quad_cities") {
     incidents: new Map(),
     callers: new Map([[caller.id, caller]]),
     intel: new Map(),
+    hostiles: new Map(),
+    objectives: new Map(),
+    campaign: "civil_dispatch",
     road_graph: roadGraph,
     game_min: 0,
     shift: null,

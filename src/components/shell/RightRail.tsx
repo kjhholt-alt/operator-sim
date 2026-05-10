@@ -16,8 +16,10 @@ import type {
   Address,
   Caller,
   EntityKind,
+  Hostile,
   Incident,
   Intel,
+  Objective,
   Personnel,
   Station,
   Unit,
@@ -31,7 +33,7 @@ interface Props {
 interface RowProps {
   label: string;
   value: string | number;
-  tone?: "base" | "bright" | "cyan" | "amber" | "emerald" | "crimson";
+  tone?: "base" | "bright" | "cyan" | "amber" | "emerald" | "crimson" | "violet";
 }
 
 function toneClass(t: NonNullable<RowProps["tone"]>): string {
@@ -42,6 +44,7 @@ function toneClass(t: NonNullable<RowProps["tone"]>): string {
     amber: "text-accent-amber",
     emerald: "text-accent-emerald",
     crimson: "text-accent-crimson",
+    violet: "text-accent-violet",
   }[t];
 }
 
@@ -112,6 +115,8 @@ const KIND_LABEL: Record<EntityKind, string> = {
   intel: "INTEL",
   station: "STATION",
   vehicle: "VEHICLE",
+  hostile: "HOSTILE",
+  objective: "OBJECTIVE",
 };
 
 function BreadcrumbHeader() {
@@ -198,6 +203,8 @@ export function RightRail({ className }: Props) {
         {entity?.kind === "caller" && <CallerDossier c={entity.data as Caller} />}
         {entity?.kind === "vehicle" && <VehicleDossier v={entity.data as Vehicle} />}
         {entity?.kind === "intel" && <IntelDossier i={entity.data as Intel} />}
+        {entity?.kind === "hostile" && <HostileDossier h={entity.data as Hostile} />}
+        {entity?.kind === "objective" && <ObjectiveDossier o={entity.data as Objective} />}
       </div>
     </aside>
   );
@@ -738,6 +745,213 @@ function IntelLinkRow({ eid }: { eid: string }) {
   });
   if (!ent) return <Row label="link" value={eid} tone="base" />;
   return <EntityLink label={ent.kind} kind={ent.kind} id={eid} display={ent.label} />;
+}
+
+// ── Hostile (Day 12.5 war-smoke) ────────────────────────────────────────
+
+function HostileDossier({ h }: { h: Hostile }) {
+  const intel = useFloor((s) => s.intel);
+  const objectives = useFloor((s) => s.objectives);
+  const sevTone: RowProps["tone"] =
+    h.severity === "critical" ? "crimson" :
+    h.severity === "high" ? "amber" : "base";
+  const statusTone: RowProps["tone"] =
+    h.status === "neutralized" ? "emerald" :
+    h.status === "engaged" ? "cyan" :
+    h.status === "confirmed" ? "amber" : "base";
+  // Confidence bar — 0..1 expressed as 12 boxes filled.
+  const conf = Math.max(0, Math.min(1, h.intel_confidence));
+  const filled = Math.round(conf * 12);
+  // Find any objective currently prosecuting this hostile.
+  const activeObj = h.active_objective_id ? objectives.get(h.active_objective_id) : null;
+  return (
+    <>
+      <div>
+        <div className="font-mono text-[15px] text-fg-bright tabular-nums">{h.id}</div>
+        <div className="font-mono text-[9px] uppercase tracking-[0.22em] text-fg-dim mt-0.5">
+          hostile · {h.type.replace(/_/g, " ")}
+        </div>
+      </div>
+      <Section title="threat">
+        <Row label="severity" value={h.severity.toUpperCase()} tone={sevTone} />
+        <Row label="status" value={h.status.replace(/_/g, " ").toUpperCase()} tone={statusTone} />
+        <Row
+          label="last known"
+          value={`T+${h.last_known_at_game_min.toFixed(1)} min`}
+          tone="amber"
+        />
+      </Section>
+      <Section title="intel confidence">
+        <div className="flex items-center gap-1 py-1">
+          {Array.from({ length: 12 }, (_, i) => (
+            <span
+              key={i}
+              className={cn(
+                "w-2 h-2 border border-border-bright",
+                i < filled
+                  ? conf > 0.75
+                    ? "bg-accent-emerald border-accent-emerald"
+                    : conf > 0.4
+                      ? "bg-accent-amber border-accent-amber"
+                      : "bg-accent-crimson border-accent-crimson"
+                  : "",
+              )}
+            />
+          ))}
+          <span className="font-mono text-[10px] text-fg-dim tabular-nums ml-2">
+            {(conf * 100).toFixed(0)}%
+          </span>
+        </div>
+      </Section>
+      <Section title="position">
+        <Row label="lng" value={h.coord[0].toFixed(5)} />
+        <Row label="lat" value={h.coord[1].toFixed(5)} />
+      </Section>
+      {activeObj && (
+        <Section title="active objective">
+          <EntityLink
+            label="objective"
+            kind="objective"
+            id={activeObj.id}
+            display={`${activeObj.id} · ${activeObj.type.replace(/_/g, " ")}`}
+            tone="cyan"
+          />
+        </Section>
+      )}
+      {h.linked_intel_ids.length > 0 && (
+        <Section title="linked intel">
+          {h.linked_intel_ids.map((iid) => {
+            const x = intel.get(iid);
+            return (
+              <EntityLink
+                key={iid}
+                label="intel"
+                kind="intel"
+                id={iid}
+                display={x?.type ?? iid}
+                tone="violet"
+              />
+            );
+          })}
+        </Section>
+      )}
+      {h.notes && (
+        <Section title="notes">
+          <div className="text-[11px] text-fg-base leading-relaxed">{h.notes}</div>
+        </Section>
+      )}
+    </>
+  );
+}
+
+// ── Objective (Day 12.5 war-smoke) ──────────────────────────────────────
+
+function ObjectiveDossier({ o }: { o: Objective }) {
+  const addresses = useFloor((s) => s.addresses);
+  const units = useFloor((s) => s.units);
+  const game_min = useFloor((s) => s.game_min);
+  const addr = addresses.get(o.address_id);
+  const sevTone: RowProps["tone"] =
+    o.severity === "critical" ? "crimson" :
+    o.severity === "high" ? "amber" : "base";
+  const statusTone: RowProps["tone"] =
+    o.status === "complete" ? "emerald" :
+    o.status === "active" ? "cyan" :
+    o.status === "failed" || o.status === "aborted" ? "crimson" : "base";
+
+  // Mission-window countdown bar.
+  const elapsed = Math.max(0, game_min - o.briefed_at_game_min);
+  const remaining = Math.max(0, o.kpi_window_game_min - elapsed);
+  const fraction = o.kpi_window_game_min > 0 ? remaining / o.kpi_window_game_min : 0;
+  const barTone =
+    fraction > 0.5 ? "bg-accent-emerald" :
+    fraction > 0.25 ? "bg-accent-amber" : "bg-accent-crimson";
+
+  return (
+    <>
+      <div>
+        <div className="font-mono text-[15px] text-fg-bright tabular-nums">{o.id}</div>
+        <div className="font-mono text-[9px] uppercase tracking-[0.22em] text-fg-dim mt-0.5">
+          objective · {o.type.replace(/_/g, " ")}
+        </div>
+      </div>
+      <Section title="state">
+        <Row label="severity" value={o.severity.toUpperCase()} tone={sevTone} />
+        <Row label="status" value={o.status.toUpperCase()} tone={statusTone} />
+        <Row label="briefed" value={`T+${o.briefed_at_game_min.toFixed(1)} min`} />
+        <Row label="window" value={`${o.kpi_window_game_min.toFixed(1)} min`} />
+        {o.resolved_at_game_min !== undefined && (
+          <Row
+            label="resolved"
+            value={`T+${o.resolved_at_game_min.toFixed(1)} min`}
+            tone="emerald"
+          />
+        )}
+        {o.status === "active" && (
+          <div className="flex items-center gap-2 py-1">
+            <div className="flex-1 h-1 bg-border-subtle relative">
+              <div
+                className={cn("absolute left-0 top-0 h-full transition-[width] duration-200", barTone)}
+                style={{ width: `${Math.min(100, Math.max(0, fraction * 100))}%` }}
+              />
+            </div>
+            <span className="font-mono text-[10px] tabular-nums text-accent-cyan">
+              T-{Math.floor(remaining).toString().padStart(2, "0")}:
+              {Math.floor((remaining % 1) * 60).toString().padStart(2, "0")}
+            </span>
+          </div>
+        )}
+      </Section>
+      <Section title="linked">
+        <EntityLink
+          label="address"
+          kind="address"
+          id={o.address_id}
+          display={addr?.street ?? o.address_id}
+        />
+        {o.hostile_id && (
+          <EntityLink
+            label="hostile"
+            kind="hostile"
+            id={o.hostile_id}
+            display={o.hostile_id}
+            tone="crimson"
+          />
+        )}
+      </Section>
+      {o.required_unit_classes.length > 0 && (
+        <Section title="required assets">
+          {o.required_unit_classes.map((c) => (
+            <Row key={c} label="class" value={c.replace(/_/g, " ")} tone="amber" />
+          ))}
+        </Section>
+      )}
+      <Section title="tasked">
+        {o.tasked_unit_ids.length === 0 ? (
+          <div className="font-mono text-[10px] text-fg-mute">— none —</div>
+        ) : (
+          o.tasked_unit_ids.map((uid) => {
+            const u = units.get(uid);
+            return (
+              <EntityLink
+                key={uid}
+                label="unit"
+                kind="unit"
+                id={uid}
+                display={u?.callsign ?? uid}
+                tone="cyan"
+              />
+            );
+          })
+        )}
+      </Section>
+      {o.brief && (
+        <Section title="brief">
+          <div className="text-[11px] text-fg-base leading-relaxed">{o.brief}</div>
+        </Section>
+      )}
+    </>
+  );
 }
 
 // ── Section wrapper ─────────────────────────────────────────────────────
