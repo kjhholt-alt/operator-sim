@@ -823,6 +823,34 @@ export function IsometricCity({ todOverride, dayCycleSec = 90 }: Props) {
           </g>
         ))}
 
+        {/* ── DAY 13: per-incident response lines ───────────────── */}
+        {/* For every unit currently working an incident, draw a thin
+            cyan line from the unit's iso position to the incident's
+            iso position. Renders BEFORE stations + incidents so the
+            beacon glyphs still win visually. */}
+        {liveUnits.map(({ u, gx, gy }) => {
+          if (!u.current_incident_id) return null;
+          if (u.status !== "en_route" && u.status !== "on_scene" && u.status !== "transporting") return null;
+          const target = liveIncidents.find((li) => li.i.id === u.current_incident_id);
+          if (!target) return null;
+          const a = iso(gx, gy, 1.0);
+          const b = iso(target.gx, target.gy, 1.0);
+          const opacity = u.status === "on_scene" ? 0.85 : 0.55;
+          return (
+            <line
+              key={`resp_${u.id}`}
+              x1={a[0]}
+              y1={a[1]}
+              x2={b[0]}
+              y2={b[1]}
+              stroke={ACCENT_CYAN}
+              strokeOpacity={opacity}
+              strokeWidth={0.9}
+              strokeDasharray="3 3"
+            />
+          );
+        })}
+
         {/* ── LIVE STATIONS ─────────────────────────────────────── */}
         {liveStations.map(({ s, gx, gy }) => (
           <g

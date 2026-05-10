@@ -125,7 +125,7 @@ export function BottomTicker() {
 
       <div className="flex items-center gap-2 shrink-0 ml-auto">
         <span className="font-mono text-[10px] text-fg-mute">Build</span>
-        <span className="font-mono text-[10px] text-fg-dim tabular-nums">v0.0.12-day12</span>
+        <span className="font-mono text-[10px] text-fg-dim tabular-nums">v0.0.13-day13</span>
         <span className="bt-sep">·</span>
         <kbd className="font-mono text-[9px] px-1.5 py-0.5 bg-bg-elev border border-border-subtle text-fg-base tracking-[0.1em]">
           Ctrl+K

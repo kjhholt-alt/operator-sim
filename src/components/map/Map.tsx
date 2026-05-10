@@ -13,7 +13,7 @@ import { MapboxOverlay } from "@deck.gl/mapbox";
 import { ScatterplotLayer, PathLayer } from "@deck.gl/layers";
 import { useFloor } from "@/state/useFloor";
 import { applyDarkStyle, DARK_TOKENS } from "@/lib/mapStyle";
-import type { Unit, Incident, UnitStatus, Coord } from "@/lib/schemas";
+import type { Unit, Incident, UnitStatus, Coord, Station } from "@/lib/schemas";
 
 const STYLE_URL = "https://tiles.openfreemap.org/styles/liberty";
 
@@ -80,6 +80,99 @@ function buildUnitLayer(units: Unit[]) {
   });
 }
 
+interface PositionedStation {
+  id: string;
+  name: string;
+  agency: Station["agency"];
+  coord: [number, number];
+}
+
+/**
+ * Day 13 — station markers.
+ *
+ * Each station gets a square cyan marker so the 2-station roster
+ * (Central + East) is legible on the map. Click → right-rail dossier.
+ */
+function buildStationLayer(stations: Station[], addressLookup: Map<string, [number, number]>) {
+  const data: PositionedStation[] = [];
+  for (const s of stations) {
+    const c = addressLookup.get(s.address_id);
+    if (c) data.push({ id: s.id, name: s.name, agency: s.agency, coord: c });
+  }
+  return new ScatterplotLayer<PositionedStation>({
+    id: "stations",
+    data,
+    getPosition: (d) => d.coord,
+    // ScatterplotLayer is round; we approximate the "square" Foundry
+    // station glyph by drawing two stacked layers (outer + inner).
+    getRadius: 14,
+    radiusUnits: "pixels",
+    radiusMinPixels: 8,
+    radiusMaxPixels: 18,
+    getFillColor: [74, 216, 230, 50],
+    stroked: true,
+    getLineColor: [74, 216, 230, 230],
+    lineWidthMinPixels: 1.5,
+    pickable: true,
+    onClick: ({ object }) => {
+      if (object) useFloor.getState().select({ kind: "station", id: object.id });
+    },
+  });
+}
+
+interface ResponseLine {
+  unit_id: string;
+  callsign: string;
+  status: UnitStatus;
+  path: [Coord, Coord];
+}
+
+/**
+ * Day 13 — per-incident response lines.
+ *
+ * For every unit currently working an incident (en_route / on_scene /
+ * transporting), draw a direct cyan line from the unit's current
+ * position to the incident's address. This reads as "who's responding
+ * to what" at a glance — the road-graph route layer shows the *path*
+ * the unit is taking; this layer shows the *assignment*.
+ */
+function buildResponseLineLayer(
+  units: Unit[],
+  incidents: Map<string, Incident>,
+  addressLookup: Map<string, [number, number]>,
+) {
+  const data: ResponseLine[] = [];
+  for (const u of units) {
+    if (!u.current_incident_id) continue;
+    if (u.status !== "en_route" && u.status !== "on_scene" && u.status !== "transporting") continue;
+    const inc = incidents.get(u.current_incident_id);
+    if (!inc) continue;
+    const incCoord = addressLookup.get(inc.address_id);
+    if (!incCoord) continue;
+    data.push({
+      unit_id: u.id,
+      callsign: u.callsign,
+      status: u.status,
+      path: [u.current_position, incCoord],
+    });
+  }
+  return new PathLayer<ResponseLine>({
+    id: "response-lines",
+    data,
+    getPath: (d) => d.path,
+    getColor: (d) =>
+      d.status === "on_scene" ? [74, 216, 230, 200] : [74, 216, 230, 140],
+    getWidth: 1.4,
+    widthUnits: "pixels",
+    widthMinPixels: 1,
+    capRounded: true,
+    pickable: false,
+    // Render *underneath* the road-graph route + units so it doesn't
+    // visually compete. The dashed feel comes from the Foundry token
+    // stroke-on-stroke layering.
+  });
+}
+
 interface PositionedIncident extends Incident {
   _coord: [number, number];
 }
@@ -130,6 +223,7 @@ export function OperatorMap() {
   const units = useFloor((s) => s.units);
   const incidents = useFloor((s) => s.incidents);
   const addresses = useFloor((s) => s.addresses);
+  const stations = useFloor((s) => s.stations);
 
   const addressLookup = useMemo(() => {
     const m = new Map<string, [number, number]>();
@@ -185,14 +279,20 @@ export function OperatorMap() {
     const overlay = overlayRef.current;
     if (!overlay) return;
     const unitArr = Array.from(units.values());
+    const stationArr = Array.from(stations.values());
     overlay.setProps({
       layers: [
+        // Bottom → top. Stations sit just above the basemap; response
+        // lines render under the road-graph route paths so the path
+        // always wins visually; incidents above lines; units on top.
+        buildStationLayer(stationArr, addressLookup),
+        buildResponseLineLayer(unitArr, incidents, addressLookup),
         buildIncidentLayer(Array.from(incidents.values()), addressLookup),
         buildRouteLayer(unitArr),
         buildUnitLayer(unitArr),
       ],
     });
-  }, [units, incidents, addressLookup]);
+  }, [units, incidents, stations, addressLookup]);
 
   useEffect(() => {
     const map = mapRef.current;

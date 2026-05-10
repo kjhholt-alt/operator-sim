@@ -8,11 +8,17 @@
 
 import { describe, it, expect, beforeEach } from "vitest";
 import { useFloor } from "@/state/useFloor";
-import { assignClosest, pickClosestAvailable } from "./assign";
+import {
+  assignClosest,
+  pickClosestAvailable,
+  compatibleClassesFor,
+  isClassCompatible,
+} from "./assign";
 import { buildRoadGraph } from "./roadGraph";
 import type {
   Address,
   Incident,
+  IncidentType,
   Station,
   Unit,
   Vehicle,
@@ -252,5 +258,185 @@ describe("assignClosest (multi-unit incidents)", () => {
     expect(r.assigned).toHaveLength(1);
     expect(r.assigned[0].class).toBe("ambulance_als");
     expect(r.assigned[0].unit_id).toBe("u_m1");
+  });
+});
+
+// ─── Day 13: agency filtering ────────────────────────────────────────
+
+describe("compatibleClassesFor / isClassCompatible (Day 13)", () => {
+  it("medical_cardiac admits ambulances + supervisor only", () => {
+    const compat = compatibleClassesFor("medical_cardiac");
+    expect(compat).toContain("ambulance_als");
+    expect(compat).toContain("supervisor");
+    expect(compat).not.toContain("engine");
+    expect(compat).not.toContain("patrol");
+  });
+
+  it("police_burglary admits patrol + k9 + supervisor only", () => {
+    const compat = compatibleClassesFor("police_burglary");
+    expect(compat).toContain("patrol");
+    expect(compat).toContain("k9");
+    expect(compat).not.toContain("engine");
+    expect(compat).not.toContain("ambulance_als");
+  });
+
+  it("fire_residential admits engine + ladder + rescue + command", () => {
+    const compat = compatibleClassesFor("fire_residential");
+    expect(compat).toEqual(expect.arrayContaining(["engine", "ladder", "rescue", "command"]));
+    expect(compat).not.toContain("patrol");
+    expect(compat).not.toContain("ambulance_als");
+  });
+
+  it("rescue_motor_vehicle admits both fire + EMS classes", () => {
+    expect(isClassCompatible("rescue_motor_vehicle", "engine")).toBe(true);
+    expect(isClassCompatible("rescue_motor_vehicle", "rescue")).toBe(true);
+    expect(isClassCompatible("rescue_motor_vehicle", "ambulance_als")).toBe(true);
+    expect(isClassCompatible("rescue_motor_vehicle", "patrol")).toBe(false);
+  });
+
+  it("alarm_false admits engine only (light response)", () => {
+    expect(isClassCompatible("alarm_false", "engine")).toBe(true);
+    expect(isClassCompatible("alarm_false", "ambulance_als")).toBe(false);
+    expect(isClassCompatible("alarm_false", "patrol")).toBe(false);
+  });
+
+  it("every IncidentType in the registry has a non-empty compat list", () => {
+    // Lock the table so a future schema addition doesn't silently land
+    // an incident type that auto-picks any random unit.
+    const types: IncidentType[] = [
+      "fire_residential", "fire_commercial", "fire_vehicle", "fire_brush",
+      "medical_cardiac", "medical_trauma", "medical_general",
+      "rescue_motor_vehicle", "rescue_water",
+      "hazmat_spill",
+      "alarm_false", "service_call",
+      "police_disturbance", "police_traffic", "police_burglary", "police_assault",
+    ];
+    for (const t of types) {
+      const compat = compatibleClassesFor(t);
+      expect(compat.length, `${t} has no compatible classes`).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe("pickClosestAvailable with compatibleClasses filter (Day 13)", () => {
+  beforeEach(() => seedTwoStations());
+
+  it("falls through engines when only ambulances are compatible", () => {
+    const s = useFloor.getState();
+    // Scene closer to central — but with compat = [ambulance_als], the
+    // engine is filtered out and the ambulance wins even though both
+    // sit at the same coord.
+    const pick = pickClosestAvailable(
+      [-90.580, 41.520], null, s.units, s.vehicles, new Set(),
+      ["ambulance_als"],
+    );
+    expect(pick?.id).toBe("u_m1");
+  });
+
+  it("returns null when no compatible class is available", () => {
+    const s = useFloor.getState();
+    // No `patrol` units are seeded — police_burglary compat would
+    // return nothing.
+    const pick = pickClosestAvailable(
+      [-90.580, 41.520], null, s.units, s.vehicles, new Set(),
+      ["patrol", "k9"],
+    );
+    expect(pick).toBeNull();
+  });
+
+  it("an empty compat list falls back to any-class behaviour", () => {
+    const s = useFloor.getState();
+    const pick = pickClosestAvailable(
+      [-90.585, 41.520], null, s.units, s.vehicles, new Set(),
+      [],
+    );
+    expect(["u_e1", "u_m1"]).toContain(pick?.id);
+  });
+});
+
+describe("assignClosest agency filter on single-unit incidents (Day 13)", () => {
+  beforeEach(() => seedTwoStations());
+
+  it("medical_cardiac auto-picks the ambulance, not the closer engine", () => {
+    // Override spawn helper to set a medical_cardiac incident manually
+    const inc: Incident = {
+      id: "i_med",
+      type: "medical_cardiac",
+      severity: "high",
+      status: "queued",
+      address_id: "addr_scene_w",
+      reported_at_game_min: 0,
+      resolution_window_game_min: 6,
+      dispatched_unit_ids: [],
+      shift_id: "test",
+      required_unit_classes: [],
+    };
+    const next = new Map(useFloor.getState().incidents);
+    next.set(inc.id, inc);
+    useFloor.setState({ incidents: next });
+
+    const r = assignClosest("i_med");
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.assigned).toHaveLength(1);
+    // Must be the ambulance — engine is closer but incompatible.
+    expect(r.assigned[0].unit_id).toBe("u_m1");
+    expect(r.assigned[0].class).toBe("ambulance_als");
+  });
+
+  it("police_burglary fails fast when no patrol is available", () => {
+    // Roster has no patrol — this should reject explicitly.
+    const inc: Incident = {
+      id: "i_pol",
+      type: "police_burglary",
+      severity: "moderate",
+      status: "queued",
+      address_id: "addr_scene_w",
+      reported_at_game_min: 0,
+      resolution_window_game_min: 8,
+      dispatched_unit_ids: [],
+      shift_id: "test",
+      required_unit_classes: [],
+    };
+    const next = new Map(useFloor.getState().incidents);
+    next.set(inc.id, inc);
+    useFloor.setState({ incidents: next });
+
+    const r = assignClosest("i_pol");
+    expect(r.ok).toBe(false);
+    if (r.ok) return;
+    expect(r.reason).toMatch(/no available .*patrol.*unit/i);
+  });
+
+  it("fire_residential picks the engine even when an ambulance is closer", () => {
+    // Move the ambulance closer to the scene than the engine.
+    const s = useFloor.getState();
+    const u = new Map(s.units);
+    u.set("u_m1", { ...u.get("u_m1")!, current_position: [-90.5805, 41.520] });
+    u.set("u_e1", { ...u.get("u_e1")!, current_position: [-90.585, 41.520] });
+    useFloor.setState({ units: u });
+
+    const inc: Incident = {
+      id: "i_fire",
+      type: "fire_residential",
+      severity: "high",
+      status: "queued",
+      address_id: "addr_scene_w",
+      reported_at_game_min: 0,
+      resolution_window_game_min: 8,
+      dispatched_unit_ids: [],
+      shift_id: "test",
+      required_unit_classes: [],
+    };
+    const next = new Map(useFloor.getState().incidents);
+    next.set(inc.id, inc);
+    useFloor.setState({ incidents: next });
+
+    const r = assignClosest("i_fire");
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    // Ambulance is closer but should be filtered out — engine wins.
+    expect(r.assigned[0].unit_id).toBe("u_e1");
+    expect(r.assigned[0].class).toBe("engine");
   });
 });

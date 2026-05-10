@@ -12,9 +12,65 @@
  */
 
 import { useFloor } from "@/state/useFloor";
-import type { Incident, Unit, VehicleClass } from "@/lib/schemas";
+import type { Incident, IncidentType, Unit, VehicleClass } from "@/lib/schemas";
 import { dispatch } from "./dispatch";
 import { haversineMeters } from "./roadGraph";
+
+// ── Day 13 — agency filtering ────────────────────────────────────────────
+//
+// Map every incident type to the set of vehicle classes that are
+// *appropriate* to respond. This is the dispatcher's first sanity check:
+// a `police_burglary` should never auto-pick a fire engine, even if the
+// engine is closest. The mapping is broad on purpose — overlap (e.g.
+// `rescue` covers both fire-rescue and EMS-rescue) is fine, the goal is
+// to filter out absurd picks rather than enforce strict agency policy.
+//
+// Multi-unit incidents already get this for free via
+// `required_unit_classes`. The filtering matters most for single-unit
+// (legacy) incidents and as a guard rail when a shift YAML omits the
+// requirement.
+
+const COMPATIBILITY: Record<IncidentType, readonly VehicleClass[]> = {
+  // Fire — engine first, ladder for high-rise/aerial work, tanker on
+  // brush, rescue + command on incidents that escalate.
+  fire_residential:     ["engine", "ladder", "rescue", "command"],
+  fire_commercial:      ["engine", "ladder", "rescue", "command"],
+  fire_vehicle:         ["engine", "rescue", "command"],
+  fire_brush:           ["brush", "tanker", "engine", "command"],
+
+  // Medical — ALS by default; BLS for non-life-threat; supervisor on
+  // any incident that needs an EMS lieutenant on scene.
+  medical_cardiac:      ["ambulance_als", "supervisor"],
+  medical_trauma:       ["ambulance_als", "supervisor", "rescue"],
+  medical_general:      ["ambulance_als", "ambulance_bls", "supervisor"],
+
+  // Rescue — fire-rescue (MVA, water) wants the engine + ALS bus
+  // together. Marine for water rescue. Air covers air-mobile work.
+  rescue_motor_vehicle: ["engine", "rescue", "ambulance_als", "ladder"],
+  rescue_water:         ["marine", "rescue", "engine", "ambulance_als", "air"],
+
+  // Hazmat — engine + command. (We don't ship a `hazmat` VehicleClass
+  // yet; the engine carries the suit.)
+  hazmat_spill:         ["engine", "command"],
+
+  // Alarms / service calls — light response.
+  alarm_false:          ["engine"],
+  service_call:         ["patrol", "engine", "supervisor"],
+
+  // Police.
+  police_disturbance:   ["patrol", "k9", "supervisor"],
+  police_traffic:       ["patrol", "supervisor"],
+  police_burglary:      ["patrol", "k9", "supervisor"],
+  police_assault:       ["patrol", "k9", "swat_armored", "supervisor"],
+};
+
+export function compatibleClassesFor(incidentType: IncidentType): readonly VehicleClass[] {
+  return COMPATIBILITY[incidentType] ?? [];
+}
+
+export function isClassCompatible(incidentType: IncidentType, vehicleClass: VehicleClass): boolean {
+  return COMPATIBILITY[incidentType]?.includes(vehicleClass) ?? false;
+}
 
 export type AssignResult =
   | { ok: true; assigned: Array<{ unit_id: string; class: VehicleClass | "any"; route_m: number }>; text: string }
@@ -25,9 +81,16 @@ function classOf(unit: Unit, vehicles: Map<string, { class: VehicleClass }>): Ve
 }
 
 /**
- * Pick the closest available unit of the given class. If `klass` is null,
- * any class qualifies. `excluded` is a set of unit ids already picked in
- * this multi-class assign call (so the same unit isn't double-counted).
+ * Pick the closest available unit of the given class.
+ *
+ *   - `klass` non-null → only that class qualifies. Compatibility set is
+ *     ignored (the caller already chose the class).
+ *   - `klass` null + `compatibleClasses` non-empty → any unit whose class
+ *     is in the set qualifies (Day 13 agency-filter path).
+ *   - `klass` null + `compatibleClasses` empty/null → any class qualifies
+ *     (legacy any-unit path; preserved for tests + back-compat).
+ *
+ * `excluded` is a set of unit ids already picked in this assign call.
  */
 export function pickClosestAvailable(
   incidentCoord: [number, number],
@@ -35,13 +98,22 @@ export function pickClosestAvailable(
   units: Map<string, Unit>,
   vehicles: Map<string, { class: VehicleClass }>,
   excluded: Set<string>,
+  compatibleClasses?: readonly VehicleClass[] | null,
 ): Unit | null {
+  const compatSet = compatibleClasses && compatibleClasses.length > 0
+    ? new Set<VehicleClass>(compatibleClasses)
+    : null;
   let best: Unit | null = null;
   let bestDist = Infinity;
   for (const u of units.values()) {
     if (excluded.has(u.id)) continue;
     if (u.status !== "available") continue;
-    if (klass !== null && classOf(u, vehicles) !== klass) continue;
+    const c = classOf(u, vehicles);
+    if (klass !== null) {
+      if (c !== klass) continue;
+    } else if (compatSet) {
+      if (!c || !compatSet.has(c)) continue;
+    }
     const d = haversineMeters(u.current_position, incidentCoord);
     if (d < bestDist) {
       bestDist = d;
@@ -91,17 +163,28 @@ export function assignClosest(incidentArg: string): AssignResult {
   }
 
   if (required.length === 0) {
-    // Single-unit incident: pick any one closest available unit.
+    // Single-unit incident: pick the closest available unit whose class
+    // is compatible with this incident type. Day 13: a `police_burglary`
+    // can no longer pull a fire engine; a `medical_cardiac` only
+    // considers ambulances + supervisor.
     if (incident.dispatched_unit_ids.length > 0) {
       return { ok: false, reason: `${incident.id} already has units assigned` };
     }
-    const pick = pickClosestAvailable(coord, null, s.units, s.vehicles, excluded);
-    if (!pick) return { ok: false, reason: "no available units" };
+    const compat = compatibleClassesFor(incident.type);
+    const pick = pickClosestAvailable(coord, null, s.units, s.vehicles, excluded, compat);
+    if (!pick) {
+      const compatLabel = compat.length === 0 ? "any class" : compat.join("/");
+      return { ok: false, reason: `no available ${compatLabel} unit for ${incident.type}` };
+    }
     const r = dispatch(pick.id, incident.id);
     if (!r.ok) return { ok: false, reason: r.reason };
-    picks.push({ unit_id: pick.id, class: "any", route_m: r.route_m });
+    const cls = s.vehicles.get(pick.vehicle_id)?.class ?? "any";
+    picks.push({ unit_id: pick.id, class: cls, route_m: r.route_m });
   } else {
     // Multi-unit: cover each required class with its own closest available unit.
+    // The shift YAML is the source of truth here — if it asked for a class,
+    // we trust it (the validator already checked compat). The class match in
+    // pickClosestAvailable enforces correctness; agency filtering is moot.
     for (const klass of required) {
       if (alreadyOnIncident.has(klass)) continue;
       const pick = pickClosestAvailable(coord, klass, s.units, s.vehicles, excluded);
