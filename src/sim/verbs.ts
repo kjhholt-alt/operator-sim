@@ -40,6 +40,10 @@ export type Slot =
   | {
       name: string;
       kind: "kind"; // an EntityKind value
+    }
+  | {
+      name: string;
+      kind: "shift"; // available_shifts[].id
     };
 
 export interface Suggestion {
@@ -209,12 +213,80 @@ const clearSelectionVerb: Verb = {
   },
 };
 
+// Day 9 — shift lobby verbs.
+//
+// `start <shift>` arms a shift from the lobby. Suggestions come from
+// `available_shifts`. Rejects if the player is mid-shift (must end_shift first).
+const startVerb: Verb = {
+  id: "start",
+  label: "start a shift from the lobby",
+  description: "Arm one of the available shift YAMLs and begin the timeline.",
+  slots: [{ name: "shift", kind: "shift" }],
+  run: ([shiftArg]) => {
+    const s = useFloor.getState();
+    if (s.shift_status === "running") {
+      return { ok: false, reason: "shift already running — `end_shift` first" };
+    }
+    const shift = s.available_shifts.find((sh) => sh.id === shiftArg);
+    if (!shift) return { ok: false, reason: `unknown shift ${shiftArg}` };
+    s.loadShift(shift);
+    return { ok: true, text: `armed ${shift.id} (tier ${shift.difficulty_tier}, ${shift.length_game_min} min, ${shift.incidents.length} incidents)` };
+  },
+};
+
+// `restart` re-arms the currently loaded shift definition. Works from
+// either running or complete state.
+const restartVerb: Verb = {
+  id: "restart",
+  label: "restart the current shift",
+  description: "Re-arm the same shift definition from game_min 0.",
+  slots: [],
+  run: () => {
+    const s = useFloor.getState();
+    if (!s.shift) return { ok: false, reason: "no shift loaded — use `start` first" };
+    const id = s.shift.id;
+    s.restartShift();
+    return { ok: true, text: `restarted ${id}` };
+  },
+};
+
+// `end_shift` aborts the running shift, computes outcome on the spot.
+const endShiftVerb: Verb = {
+  id: "end_shift",
+  label: "end the running shift now",
+  description: "Force end-of-shift; computes a summary from current state.",
+  slots: [],
+  run: () => {
+    const s = useFloor.getState();
+    if (!s.shift) return { ok: false, reason: "no shift loaded" };
+    if (s.shift_status !== "running") return { ok: false, reason: "shift is not running" };
+    s.endShiftNow();
+    return { ok: true, text: `${s.shift.id} ended` };
+  },
+};
+
+// `lobby` returns to the lobby (drops the current shift entirely).
+const lobbyVerb: Verb = {
+  id: "lobby",
+  label: "return to the shift lobby",
+  description: "Drop the current shift and reset the roster to homebase.",
+  slots: [],
+  run: () => {
+    useFloor.getState().returnToLobby();
+    return { ok: true, text: "returned to lobby" };
+  },
+};
+
 export const VERBS: readonly Verb[] = [
   dispatchVerb,
   recallVerb,
   focusVerb,
   pauseVerb,
   speedVerb,
+  startVerb,
+  restartVerb,
+  endShiftVerb,
+  lobbyVerb,
   backVerb,
   forwardVerb,
   clearSelectionVerb,
@@ -338,6 +410,16 @@ export function suggestForInput(parsed: ParsedInput): Suggestion[] {
     return kinds
       .filter((k) => partial.length === 0 || k.startsWith(partial))
       .map((k) => ({ token: k, display: k }));
+  }
+
+  if (slot.kind === "shift") {
+    return s.available_shifts
+      .filter((sh) => partial.length === 0 || sh.id.toLowerCase().includes(partial))
+      .map((sh) => ({
+        token: sh.id,
+        display: sh.id,
+        trailing: `tier ${sh.difficulty_tier} · ${sh.length_game_min} min · ${sh.incidents.length} inc`,
+      }));
   }
 
   return [];

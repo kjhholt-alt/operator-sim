@@ -38,6 +38,8 @@ const OUTCOME_TONE: Record<IncidentResult["outcome"], string> = {
 export function ShiftSummary() {
   const outcome = useFloor((s) => s.shift_outcome);
   const dismiss = useFloor((s) => s.dismissShiftOutcome);
+  const returnToLobby = useFloor((s) => s.returnToLobby);
+  const restartShift = useFloor((s) => s.restartShift);
 
   useEffect(() => {
     if (!outcome) return;
@@ -134,16 +136,24 @@ export function ShiftSummary() {
         </div>
 
         {/* ── Footer ──────────────────────────────────────────────── */}
-        <div className="border-t border-border-subtle px-4 py-2.5 flex items-center justify-between">
+        <div className="border-t border-border-subtle px-4 py-2.5 flex items-center justify-between gap-2">
           <span className="font-mono text-[10px] text-fg-mute uppercase tracking-[0.18em]">
-            press <kbd className="text-fg-base">ESC</kbd> or click outside to close
+            press <kbd className="text-fg-base">ESC</kbd> to close summary
           </span>
-          <button
-            onClick={dismiss}
-            className="font-mono text-[11px] text-accent-cyan border border-accent-cyan/30 px-3 py-1 hover:bg-accent-cyan/10"
-          >
-            Close
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => restartShift()}
+              className="font-mono text-[11px] text-fg-base border border-border-subtle px-3 py-1 hover:border-accent-cyan hover:text-accent-cyan"
+            >
+              Restart
+            </button>
+            <button
+              onClick={() => returnToLobby()}
+              className="font-mono text-[11px] text-accent-cyan border border-accent-cyan/30 px-3 py-1 hover:bg-accent-cyan/10"
+            >
+              Return to Lobby
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -2,22 +2,23 @@
 /**
  * Operator Sim — boot-time seed.
  *
- * Day 6: hydrates the floor with the baked OSM dataset (addresses, road graph)
- * + the static roster (1 station, 3 units, 4 personnel) and arms the Tier-1
- * shift driver. Live incidents are NOT seeded — they spawn from the YAML's
- * spawn timeline as game time advances.
+ * Day 9: hydrates the floor with the baked OSM dataset (addresses, road
+ * graph) + the static roster (1 station, 4 units, 6 personnel), then loads
+ * every shipped shift YAML into `available_shifts`. The game boots into the
+ * **lobby** (shift_status = "idle") — the player picks Tier 1 or Tier 2 from
+ * the ShiftLobby panel, which calls `loadShift(...)` and the timeline starts.
  *
  * Idempotent: safe to call multiple times (clears + re-seeds).
  */
 
-import type { Address, Caller, Station, Unit, Vehicle, Personnel } from "@/lib/schemas";
+import type { Address, Caller, Coord, Station, Unit, Vehicle, Personnel } from "@/lib/schemas";
 import { useFloor } from "./useFloor";
 import { loadRoadGraph } from "@/sim/roadGraph";
-import { buildShiftIntel, parseShift } from "@/sim/shift";
-// Vite `?raw` import → bundle the YAML at build time. Keeps the player from
-// having to fetch /data/shifts/* at runtime and lets us ship the shift inside
-// the SPA bundle.
+import { parseShift } from "@/sim/shift";
+// Vite `?raw` imports → bundle each YAML at build time. SPA-only; no runtime
+// fetch needed.
 import qcTier1Yaml from "../../data/shifts/qc_tier1_001.yaml?raw";
+import qcTier2Yaml from "../../data/shifts/qc_tier2_001.yaml?raw";
 
 const QC_CENTER: [number, number] = [-90.5776, 41.5236];
 
@@ -59,11 +60,10 @@ export async function bootFloor(city = "quad_cities") {
     loadRoadGraph(`${import.meta.env.BASE_URL}data/${city}/roads.geojson`),
   ]);
 
-  // Day 6: parse the shipped Tier-1 shift YAML (Zod-validated). Shift incidents
-  // are NOT pushed into the live `incidents` Map at boot — they wait in the
-  // shift's spawn timeline and arrive on tick when game_min ≥ spawn_time.
-  const shift = parseShift(qcTier1Yaml);
-  const shiftIntel = buildShiftIntel(shift);
+  // Day 9: parse every shipped shift YAML (Zod-validated). They go into
+  // `available_shifts` for the lobby; only the one the player picks gets
+  // armed (loadShift) and starts the spawn timeline.
+  const shifts = [parseShift(qcTier1Yaml), parseShift(qcTier2Yaml)];
 
   // 1 station @ QC center (Davenport core).
   const station: Station = {
@@ -118,6 +118,10 @@ export async function bootFloor(city = "quad_cities") {
     notes: "Repeat caller, cardiac history. Lives alone. Daughter on speed-dial.",
   };
 
+  // Capture each unit's starting coord — returnToLobby uses this to send
+  // every unit back home after a shift completes (no road-graph reroute).
+  const homebases = new Map<string, Coord>(units.map((u) => [u.id, u.current_position]));
+
   // Hydrate the store wholesale (cleaner than per-row upserts).
   const f = useFloor.getState();
   useFloor.setState({
@@ -128,19 +132,23 @@ export async function bootFloor(city = "quad_cities") {
     units: new Map(units.map((u) => [u.id, u])),
     incidents: new Map(),
     callers: new Map([[caller.id, caller]]),
-    intel: new Map(shiftIntel.map((it) => [it.id, it])),
+    intel: new Map(),
     road_graph: roadGraph,
     game_min: 0,
+    shift: null,
+    shift_id: null,
+    shift_status: "idle",
+    incidents_spawned: new Set(),
+    shift_outcome: null,
+    available_shifts: shifts,
+    unit_homebases: homebases,
+    paused: false,
   });
-
-  // Day 6: arm the shift driver. Once `loadShift` flips status to "running",
-  // `spawnDueIncidents` will start firing in the tick loop.
-  f.loadShift(shift);
 
   const graphSummary = roadGraph
     ? `${roadGraph.nodes.size} nodes`
     : "no road graph";
   f.logEvent(
-    `boot — shift ${shift.id} (tier ${shift.difficulty_tier}, ${shift.length_game_min} min, ${shift.incidents.length} incidents) loaded · ${addresses.length} addrs · ${graphSummary}`,
+    `boot — ${shifts.length} shifts available · ${addresses.length} addrs · ${units.length} units · ${graphSummary} · awaiting lobby selection`,
   );
 }

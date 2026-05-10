@@ -25,6 +25,7 @@ import type {
 } from "@/lib/schemas";
 import type { RoadGraph } from "@/sim/roadGraph";
 import type { ShiftOutcome } from "@/sim/shift";
+import { computeOutcome } from "@/sim/shift";
 
 export type SimSpeed = 0 | 0.5 | 1 | 2 | 4;
 
@@ -56,6 +57,15 @@ export interface FloorState {
   // Used by spawnDueIncidents to make the spawn step idempotent across ticks.
   incidents_spawned: Set<string>;
   shift_outcome: ShiftOutcome | null;
+  // Day 9: every shift YAML loaded at boot ends up here. Lobby + start verb
+  // pick from this list. Roster (units/stations/vehicles/personnel) is
+  // independent — units stay between shifts, only the timeline + live
+  // incidents reset.
+  available_shifts: Shift[];
+  // Snapshot of unit homebase coords captured at boot, used by returnToLobby
+  // to send everyone back to where they started without rerouting on the road
+  // graph (lobby is a paused state, not a sim state).
+  unit_homebases: Map<string, Coord>;
 
   // ── working set ──
   units: Map<string, Unit>;
@@ -102,6 +112,14 @@ export interface FloorState {
   markIncidentSpawned: (shift_incident_id: string) => void;
   completeShift: (outcome: ShiftOutcome) => void;
   dismissShiftOutcome: () => void;
+  setAvailableShifts: (shifts: Shift[]) => void;
+  setUnitHomebases: (m: Map<string, Coord>) => void;
+  /** Re-arm the currently loaded shift definition (idempotent re-roll). */
+  restartShift: () => void;
+  /** Force-end the running shift; computes outcome from current incidents. */
+  endShiftNow: () => void;
+  /** Drop shift state + reset roster to homebases; show lobby. */
+  returnToLobby: () => void;
 
   // ── derived ──
   getEntity: (kind: EntityKind, id: string) => AnyEntity | null;
@@ -120,6 +138,8 @@ export const useFloor = create<FloorState>()(
     shift_status: "idle",
     incidents_spawned: new Set(),
     shift_outcome: null,
+    available_shifts: [],
+    unit_homebases: new Map(),
 
     units: new Map(),
     incidents: new Map(),
@@ -239,6 +259,63 @@ export const useFloor = create<FloorState>()(
     },
     dismissShiftOutcome() {
       set({ shift_outcome: null });
+    },
+    setAvailableShifts(shifts) {
+      set({ available_shifts: shifts });
+    },
+    setUnitHomebases(m) {
+      set({ unit_homebases: m });
+    },
+    restartShift() {
+      const s = get();
+      if (!s.shift) return;
+      // Re-arm the same shift definition AND reset the roster + incidents.
+      // (loadShift would reset clock + spawned set, but we also want a clean
+      // map — leftover units en_route from a finished shift are confusing.)
+      get().returnToLobby();
+      get().loadShift(s.shift);
+    },
+    endShiftNow() {
+      const s = get();
+      if (!s.shift || s.shift_status !== "running") return;
+      const outcome = computeOutcome(s.shift, s.incidents);
+      set({ shift_status: "complete", shift_outcome: outcome, paused: true });
+    },
+    returnToLobby() {
+      set((s) => {
+        // Reset every unit to its boot-time homebase coord, status=available.
+        // No road-graph routing — this is a between-shifts reset, not a sim event.
+        const nextUnits = new Map<string, Unit>();
+        for (const [id, u] of s.units) {
+          const home = s.unit_homebases.get(id) ?? u.current_position;
+          nextUnits.set(id, {
+            ...u,
+            status: "available",
+            status_since_game_min: 0,
+            current_position: home,
+            current_route: undefined,
+            route_progress_m: undefined,
+            route_total_m: undefined,
+            destination_coord: undefined,
+            on_arrival: undefined,
+            current_incident_id: undefined,
+          });
+        }
+        return {
+          shift: null,
+          shift_id: null,
+          shift_status: "idle",
+          shift_outcome: null,
+          incidents_spawned: new Set(),
+          incidents: new Map(),
+          units: nextUnits,
+          game_min: 0,
+          paused: false,
+          selection: null,
+          nav_back: [],
+          nav_forward: [],
+        };
+      });
     },
 
     getEntity(kind, id) {

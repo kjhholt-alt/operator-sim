@@ -1,0 +1,52 @@
+{
+  "username": "Operator Sim Build",
+  "embeds": [
+    {
+      "title": "Day 8 shipped — multi-unit incidents · Tier 2 lands · Phase 2 in flight",
+      "url": "https://github.com/kjhholt-alt/operator-sim/commit/540a7b3",
+      "description": "The dispatch FSM goes class-aware. An MVA needs **engine + ambulance** on scene before the resolution timer starts; a structure fire needs **engine + ladder**; a police assault needs **patrol + ambulance**. Tier 2 ships denser pacing (14 min, 6 incidents) and introduces police calls. Roster expanded to 4 unit classes.",
+      "color": 4185983,
+      "fields": [
+        {"name": "Commit", "value": "[`540a7b3`](https://github.com/kjhholt-alt/operator-sim/commit/540a7b3)", "inline": true},
+        {"name": "Build", "value": "tsc clean · 69/69 tests · vite 13s · 531 KB gz", "inline": true},
+        {"name": "Phase", "value": "Phase 1 ✅ · **Phase 2 opened**", "inline": false},
+        {
+          "name": "Schema",
+          "value": "`ShiftIncident.required_units: VehicleClass[]` (default `[]`) — flows into `Incident.required_unit_classes`. New `Incident.dwell_started_at_game_min` records when the requirement was first satisfied. Empty array = legacy single-unit behavior, fully backwards-compatible.",
+          "inline": false
+        },
+        {
+          "name": "FSM rewrite (`tickStep` Phase 3)",
+          "value": "Split into 3a (per-incident dwell-start gate via `requirementMet()`) and 3b (window-elapsed → resolve + send ALL on-scene units home). Class-lookup goes Unit → Vehicle.class, so the FsmContext now carries `vehicles`.",
+          "inline": false
+        },
+        {
+          "name": "Roster expanded",
+          "value": "**E1** engine · **L1** ladder · **M1** ambulance_als · **P1** patrol — all from Davenport Central, all available at boot. 6 personnel: lieutenant, 2 firefighters, paramedic, EMT, officer.",
+          "inline": false
+        },
+        {
+          "name": "Tier 2 shift (`qc_tier2_001.yaml`)",
+          "value": "14 game-min · 6 incidents · denser pacing, multi-unit-heavy:\n• T+0.5 police_traffic [patrol]\n• T+2.0 medical_cardiac [ambulance]\n• T+4.0 rescue_motor_vehicle [engine + ambulance]\n• T+6.5 police_assault [patrol + ambulance]\n• T+8.5 fire_residential **CRITICAL** [engine + ladder]\n• T+11.0 alarm_false [engine]",
+          "inline": false
+        },
+        {
+          "name": "Dossier requirement chip",
+          "value": "Selecting an incident with `required_units` shows a new \"REQUIRED UNITS\" section: each class lists `✓ on scene` (emerald) or `— pending` (amber). A live \"dwell since\" row appears once the timer starts.",
+          "inline": false
+        },
+        {
+          "name": "Tests",
+          "value": "**69/69 pass.** Day 8 added 4 multi-unit tests: engine-only-doesn't-start-dwell · both-on-scene-starts-dwell · full-cycle-through-resolution · legacy-single-unit-still-works. Existing 65 tests untouched (backwards-compat verified by Zod default).",
+          "inline": false
+        },
+        {
+          "name": "Day 9 next",
+          "value": "Pick from: **(a)** shift picker UI (Tier 1 vs Tier 2 from a menu) · **(b)** multi-station roster + agency-aware closest-unit dispatch · **(c)** save/replay verbs · **(d)** full QC bbox tile-and-merge.",
+          "inline": false
+        }
+      ],
+      "footer": {"text": "Operator Sim · Day 8 · master @ 540a7b3 · Phase 2 in flight"}
+    }
+  ]
+}
