@@ -12,6 +12,7 @@
 
 import { useFloor } from "@/state/useFloor";
 import { dispatch, sendHome } from "./dispatch";
+import { assignClosest } from "./assign";
 import type { EntityKind, Incident, Unit } from "@/lib/schemas";
 
 // ── Slots ──────────────────────────────────────────────────────────────
@@ -70,6 +71,25 @@ export interface Verb {
 }
 
 const SPEED_VALUES = ["0.5", "1", "2", "4"] as const;
+
+// Day 10 — `assign <incident>` auto-picks the closest available unit(s)
+// for the incident's required_unit_classes. No unit slot needed.
+const assignVerb: Verb = {
+  id: "assign",
+  label: "auto-assign closest units to incident",
+  description: "Pick the closest available unit(s) for the incident's required classes.",
+  slots: [
+    {
+      name: "incident",
+      kind: "incident",
+      filter: (i) => i.status !== "resolved" && i.status !== "cancelled",
+    },
+  ],
+  run: ([incArg]) => {
+    const r = assignClosest(incArg);
+    return r.ok ? { ok: true, text: r.text } : { ok: false, reason: r.reason };
+  },
+};
 
 // dispatch <unit:available> <incident:active>
 const dispatchVerb: Verb = {
@@ -279,6 +299,7 @@ const lobbyVerb: Verb = {
 
 export const VERBS: readonly Verb[] = [
   dispatchVerb,
+  assignVerb,
   recallVerb,
   focusVerb,
   pauseVerb,

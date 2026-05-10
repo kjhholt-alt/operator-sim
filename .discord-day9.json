@@ -1,0 +1,52 @@
+{
+  "username": "Operator Sim Build",
+  "embeds": [
+    {
+      "title": "Day 9 shipped — Shift Lobby · Tier 2 is now reachable",
+      "url": "https://github.com/kjhholt-alt/operator-sim/commit/341cc90",
+      "description": "The world boots into a lobby instead of auto-arming Tier 1. Pick **T1 qc_tier1_001** for the relaxed warmup or **T2 qc_tier2_001** for the multi-unit-heavy structure-fire run. End-of-shift summary now offers **Restart** (re-arm same shift) or **Return to Lobby** (pick a different one). Day 8's Tier 2 shift is finally playable.",
+      "color": 4185983,
+      "fields": [
+        {"name": "Commit", "value": "[`341cc90`](https://github.com/kjhholt-alt/operator-sim/commit/341cc90)", "inline": true},
+        {"name": "Build", "value": "tsc clean · 81/81 tests · vite 11s · 531 KB gz", "inline": true},
+        {"name": "Phase", "value": "Phase 2 in flight · Day 0–9 ✅", "inline": false},
+        {
+          "name": "ShiftLobby panel",
+          "value": "Centred modal over dimmed map. Each shift gets a tier chip (emerald T1 · amber T2-3 · crimson T4-5), notes preview, incident-type pill row, and a `start →` affordance. Player click = `loadShift(...)` → status flips `idle` → `running` → spawn timeline starts.",
+          "inline": false
+        },
+        {
+          "name": "Four new palette verbs",
+          "value": "`start <shift>` — arm a shift from the lobby (with shift-id autocomplete)\n`restart` — re-arm current shift definition, clears incidents_spawned\n`end_shift` — force end-of-shift; computes outcome on the spot\n`lobby` — drop the current shift, reset roster to homebases",
+          "inline": false
+        },
+        {
+          "name": "New `shift` slot kind in palette",
+          "value": "Typing `start ` (Tab) now suggests every available_shift with trailing context: `tier 1 · 12 min · 5 inc`. Slot-aware filtering — no more rememberin' the shift id.",
+          "inline": false
+        },
+        {
+          "name": "Return-to-Lobby reset",
+          "value": "When the player exits a finished shift, every unit gets reset to its boot-time homebase coord with `status: available`, no road-graph reroute (this is a between-shifts state, not a sim event). Lobby reappears, available_shifts preserved, ready for another run.",
+          "inline": false
+        },
+        {
+          "name": "ShiftSummary footer revamp",
+          "value": "Old single Close button → two buttons: **Restart** (re-arms same shift, fresh game_min) and **Return to Lobby** (full reset). Esc still hides the modal without resetting state — same as before.",
+          "inline": false
+        },
+        {
+          "name": "Tests",
+          "value": "**81/81 pass** · 12 new lobby tests: boot-to-idle, start arms correct shift, start rejects unknown id, start rejects when running, restart clears spawned set, restart no-op without shift, end_shift completes + scores, end_shift rejects when idle, lobby resets roster, available_shifts preserved across reset, shift-slot suggestions list/filter.",
+          "inline": false
+        },
+        {
+          "name": "Day 10 menu",
+          "value": "(a) **multi-station roster** + agency-aware closest-unit dispatch · (b) save/replay verbs (Dexie) · (c) full QC bbox tile-and-merge (Overpass scrape) · (d) more shifts (Tier 3, narrative arcs).",
+          "inline": false
+        }
+      ],
+      "footer": {"text": "Operator Sim · Day 9 · master @ 341cc90"}
+    }
+  ]
+}

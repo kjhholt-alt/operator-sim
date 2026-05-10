@@ -2,9 +2,9 @@
 
 > Updated by Producer agent every 30 min during active sprints. This file IS the truth.
 
-**Last updated:** 2026-05-09 — end of Day 9 autonomous run · Phase 2 in flight
-**Phase:** Day 0–9 ✅ · Phase 2 (variety) — multi-unit + lobby/shift-picker shipped
-**Build:** v0.0.9-day9
+**Last updated:** 2026-05-09 — end of Day 10 autonomous run · Phase 2 in flight
+**Phase:** Day 0–10 ✅ · Phase 2 (variety) — multi-station + closest-unit dispatch shipped
+**Build:** v0.0.10-day10
 **Repo:** [github.com/kjhholt-alt/operator-sim](https://github.com/kjhholt-alt/operator-sim)
 **End-of-year goal:** Steam Early Access launch by 2026-12-31. See `docs/GDD.md` § 11 for the 8-phase roadmap.
 **CI:** workflows green; `npm run validate:shifts` runs against the shipped Tier-1 YAML.
@@ -40,7 +40,8 @@ At T+12:00 the win/loss summary lands with an S/A/B/C/D grade.
 | 6 | First real shift YAML · Zod-validated loader · spawn timeline · win/loss summary modal | 58 | `d4d228a` |
 | 7 | Live Shift HUD · defensive loadShift · 7 edge-case tests · STATUS rewrite · touchpoint #1 | 65 | `36a8c54` |
 | 8 | Multi-unit incidents (`required_units`) · Tier 2 shift YAML · 4-class roster (engine/ladder/ambulance/patrol) · per-incident dwell-start gate · dossier requirement chip · 4 multi-unit tests | 69 | `540a7b3` |
-| 9 | ShiftLobby panel · `start`/`restart`/`end_shift`/`lobby` verbs · `shift` slot kind in palette · returnToLobby resets roster to homebases · ShiftSummary footer adds Restart + Return-to-Lobby · 12 lobby tests | **81** | (this commit) |
+| 9 | ShiftLobby panel · `start`/`restart`/`end_shift`/`lobby` verbs · `shift` slot kind in palette · returnToLobby resets roster to homebases · ShiftSummary footer adds Restart + Return-to-Lobby · 12 lobby tests | 81 | `341cc90` |
+| 10 | 2nd station (Davenport East) · roster grew 4→6 units · `assign <incident>` verb auto-picks closest available units per required class · `pickClosestAvailable` haversine helper · 12 closest-unit tests | **93** | (this commit) |
 
 ## 65/65 tests · `tsc --noEmit` clean · `vite build` 13s · 1.86 MB / 531 KB gzipped
 
