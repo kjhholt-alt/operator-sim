@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import {
+  activeNarrativeArcs,
   buildShiftIntel,
   computeOutcome,
   parseShift,
@@ -11,9 +12,13 @@ import {
 import type { Address, Incident, Shift } from "@/lib/schemas";
 
 const SHIFT_PATH = resolve(__dirname, "..", "..", "data", "shifts", "qc_tier1_001.yaml");
+const TIER3_PATH = resolve(__dirname, "..", "..", "data", "shifts", "qc_tier3_001.yaml");
 
 function shippedYaml(): string {
   return readFileSync(SHIFT_PATH, "utf8");
+}
+function tier3Yaml(): string {
+  return readFileSync(TIER3_PATH, "utf8");
 }
 
 function makeAddress(id: string, street: string): Address {
@@ -344,5 +349,89 @@ describe("loadShift (defensive reset)", () => {
     expect(s.shift_status).toBe("running");
     expect(s.incidents_spawned.size).toBe(0);
     expect(s.shift_outcome).toBeNull();
+  });
+});
+
+describe("Tier 3 shift (shipped YAML)", () => {
+  it("parses qc_tier3_001 through Zod with 9 incidents and 3 narrative threads", () => {
+    const shift = parseShift(tier3Yaml());
+    expect(shift.id).toBe("qc_tier3_001");
+    expect(shift.difficulty_tier).toBe(3);
+    expect(shift.length_game_min).toBe(18);
+    expect(shift.incidents).toHaveLength(9);
+    expect(shift.narrative_threads.map((t) => t.id).sort()).toEqual(["t_apex", "t_brady", "t_heatwave"]);
+  });
+
+  it("Tier 3 incidents reference only declared thread ids", () => {
+    const shift = parseShift(tier3Yaml());
+    const declared = new Set(shift.narrative_threads.map((t) => t.id));
+    for (const si of shift.incidents) {
+      if (si.thread_id) expect(declared.has(si.thread_id)).toBe(true);
+    }
+  });
+
+  it("Tier 3 multi-unit fire requires all three classes (engine + ladder + ambulance)", () => {
+    const shift = parseShift(tier3Yaml());
+    const apex = shift.incidents.find((i) => i.id === "i_307")!;
+    expect(apex.required_units.sort()).toEqual(["ambulance_als", "engine", "ladder"]);
+  });
+});
+
+describe("activeNarrativeArcs (Day 11)", () => {
+  function fakeI(id: string, status: Incident["status"] = "queued"): Incident {
+    return {
+      id,
+      type: "alarm_false",
+      severity: "low",
+      status,
+      address_id: "addr_x",
+      reported_at_game_min: 0,
+      resolution_window_game_min: 1,
+      dispatched_unit_ids: [],
+      shift_id: "qc_tier3_001",
+      required_unit_classes: [],
+    };
+  }
+
+  it("returns no active arcs when no incidents are live", () => {
+    const shift = parseShift(tier3Yaml());
+    const arcs = activeNarrativeArcs(shift, new Map());
+    expect(arcs).toHaveLength(0);
+  });
+
+  it("flags an arc once any of its incidents is live and unresolved", () => {
+    const shift = parseShift(tier3Yaml());
+    const live = new Map<string, Incident>();
+    live.set("i_301", fakeI("i_301", "queued"));
+    const arcs = activeNarrativeArcs(shift, live);
+    expect(arcs.map((a) => a.id)).toEqual(["t_heatwave"]);
+  });
+
+  it("drops an arc once all of its incidents are resolved", () => {
+    const shift = parseShift(tier3Yaml());
+    const live = new Map<string, Incident>();
+    for (const iid of ["i_301", "i_302", "i_303"]) {
+      live.set(iid, fakeI(iid, "resolved"));
+    }
+    const arcs = activeNarrativeArcs(shift, live);
+    expect(arcs.map((a) => a.id)).not.toContain("t_heatwave");
+  });
+
+  it("can flag multiple arcs simultaneously", () => {
+    const shift = parseShift(tier3Yaml());
+    const live = new Map<string, Incident>();
+    live.set("i_302", fakeI("i_302", "on_scene")); // heatwave
+    live.set("i_306", fakeI("i_306", "dispatched")); // brady
+    live.set("i_307", fakeI("i_307", "on_scene")); // apex
+    const arcs = activeNarrativeArcs(shift, live);
+    expect(arcs.map((a) => a.id).sort()).toEqual(["t_apex", "t_brady", "t_heatwave"]);
+  });
+
+  it("treats a cancelled incident as not-live (doesn't flag the arc)", () => {
+    const shift = parseShift(tier3Yaml());
+    const live = new Map<string, Incident>();
+    live.set("i_301", fakeI("i_301", "cancelled"));
+    const arcs = activeNarrativeArcs(shift, live);
+    expect(arcs.map((a) => a.id)).not.toContain("t_heatwave");
   });
 });

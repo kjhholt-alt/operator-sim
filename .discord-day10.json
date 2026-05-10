@@ -1,0 +1,42 @@
+{
+  "username": "Operator Sim Build",
+  "embeds": [
+    {
+      "title": "Day 10 shipped — 2nd station + closest-unit auto-assign",
+      "url": "https://github.com/kjhholt-alt/operator-sim/commit/0b3df49",
+      "description": "Davenport East joins Central. Roster goes 4→6 units. The new **`assign <incident>`** verb auto-picks the closest available unit(s) by haversine — no unit slot needed, just call `assign i_205` and the right engines + ambulance roll from the right station.",
+      "color": 4185983,
+      "fields": [
+        {"name": "Commit", "value": "[`0b3df49`](https://github.com/kjhholt-alt/operator-sim/commit/0b3df49)", "inline": true},
+        {"name": "Build", "value": "tsc clean · 93/93 tests · vite 11s · 531 KB gz", "inline": true},
+        {"name": "Phase", "value": "Phase 2 in flight · Day 0–10 ✅", "inline": false},
+        {
+          "name": "Two stations",
+          "value": "**Davenport Central** — E1 engine, L1 ladder, M1 ambulance, P1 patrol (4 units)\n**Davenport East** — E2 engine, M2 ambulance (2 units)\n9 personnel total. Each unit's homebase coord captured for the returnToLobby reset.",
+          "inline": false
+        },
+        {
+          "name": "`assign <incident>` verb",
+          "value": "No unit slot. Resolves the incident, then for each entry in `required_unit_classes` picks the closest available unit of that class (haversine, agency-blind, deterministic). Skips classes already covered by previously-dispatched units. Falls back to any-class closest for legacy single-unit incidents.",
+          "inline": false
+        },
+        {
+          "name": "Why this matters",
+          "value": "Tier 2's structure fire (`engine + ladder` required) is now `assign i_205` — keystroke speedrun. The picker prefers the same-station pair when available; only crosses to the other station when the local class is busy. **Tier 3 next-day will stress this hard.**",
+          "inline": false
+        },
+        {
+          "name": "Tests (+12)",
+          "value": "`pickClosestAvailable`: picks central for westside, east for eastside, respects excluded set, returns null when no match, any-class fallback. `assignClosest`: fans out across required classes, falls back to other station when first is busy, rejects when no available class unit, skips classes already covered on partial-fill, rejects already-resolved or pre-assigned single-unit incidents.",
+          "inline": false
+        },
+        {
+          "name": "Day 11 (next) — Tier 3 + threads",
+          "value": "Authoring `qc_tier3_001.yaml` (denser, multi-arc, 18 min). Adding a runtime narrative-thread indicator on the ShiftHUD so when `t_apex` arc fires you can see it light up. The 6-unit roster's about to get a workout.",
+          "inline": false
+        }
+      ],
+      "footer": {"text": "Operator Sim · Day 10 · master @ 0b3df49"}
+    }
+  ]
+}

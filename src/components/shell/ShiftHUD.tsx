@@ -9,6 +9,7 @@
 
 import { useFloor } from "@/state/useFloor";
 import { cn } from "@/lib/cn";
+import { activeNarrativeArcs } from "@/sim/shift";
 
 function formatTimeLeft(remaining_game_min: number): string {
   if (remaining_game_min <= 0) return "T-00:00";
@@ -53,6 +54,9 @@ export function ShiftHUD() {
     }
   }
 
+  // Day 11: which narrative arcs are currently in flight.
+  const activeArcs = activeNarrativeArcs(shift, incidents);
+
   const isComplete = status === "complete";
 
   return (
@@ -86,6 +90,21 @@ export function ShiftHUD() {
       <span className="font-mono text-[10px] text-accent-emerald tabular-nums">
         ●{on_time} on-time
       </span>
+
+      {/* Active narrative arcs (Day 11). Hidden when no arcs running. */}
+      {activeArcs.length > 0 && (
+        <div className="flex items-center gap-1">
+          {activeArcs.map((a) => (
+            <span
+              key={a.id}
+              title={a.arc}
+              className="font-mono text-[9px] uppercase tracking-[0.18em] text-accent-violet border border-accent-violet/40 bg-accent-violet/5 px-1.5 py-0.5"
+            >
+              arc · {a.id.replace(/^t_/, "")}
+            </span>
+          ))}
+        </div>
+      )}
 
       {/* Time remaining bar — drains as deadline approaches. */}
       <div className="flex items-center gap-2 min-w-[120px]">

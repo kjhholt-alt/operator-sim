@@ -1,0 +1,160 @@
+id: qc_tier3_001
+date: 2026-05-09
+city: quad_cities
+difficulty_tier: 3
+length_game_min: 18
+notes: |
+  Tier 3 — sustained chaos. 9 incidents across 18 game-min organised into
+  three narrative arcs: a heat-wave medical cluster, a Brady Street pattern
+  (repeat caller cardiac after a false alarm), and a peak-noon structure
+  fire that needs ALL fire units committed. The 6-unit / 2-station roster
+  is just barely enough — closest-unit picks have to be tight or the late
+  alarm slips into LATE territory.
+
+incidents:
+  # ── Arc A: heat-wave EMS cluster (concurrent EMS demand) ─────────────
+  - id: i_301
+    spawn_time_game_min: 0.5
+    type: medical_general
+    severity: moderate
+    address: 215 North Main Street
+    caller_persona: Coworker, mid-30s, dehydration concern
+    expected_units: 1 ambulance
+    required_units: [ambulance_als]
+    resolution_window_game_min: 2.0
+    narrative_hooks:
+      - Heat exhaustion, conscious but altered
+    thread_id: t_heatwave
+
+  - id: i_302
+    spawn_time_game_min: 2.0
+    type: medical_general
+    severity: high
+    address: 1122 West Central Park Avenue
+    caller_persona: Building manager, elderly tenant unconscious
+    expected_units: 1 ambulance
+    required_units: [ambulance_als]
+    resolution_window_game_min: 2.5
+    narrative_hooks:
+      - Heat stroke suspected, AC out in unit
+    thread_id: t_heatwave
+
+  - id: i_303
+    spawn_time_game_min: 3.5
+    type: rescue_motor_vehicle
+    severity: moderate
+    address: 400 West 4th Street
+    caller_persona: Bystander, two-car collision
+    expected_units: 1 engine + 1 ambulance
+    required_units: [engine, ambulance_als]
+    resolution_window_game_min: 2.5
+    narrative_hooks:
+      - Heat-related fatigue may be a factor
+    thread_id: t_heatwave
+
+  # ── Arc B: Brady Street pattern (repeat caller) ──────────────────────
+  - id: i_304
+    spawn_time_game_min: 5.5
+    type: alarm_false
+    severity: low
+    address: 318 Brady Street
+    caller_persona: Resident, "just the smoke detector"
+    expected_units: 1 engine
+    required_units: [engine]
+    resolution_window_game_min: 1.0
+    narrative_hooks:
+      - Burnt toast, no fire — but caller seemed off
+    thread_id: t_brady
+
+  - id: i_305
+    spawn_time_game_min: 7.0
+    type: police_traffic
+    severity: low
+    address: 322 Brady Street
+    caller_persona: Same resident, now reporting honking outside
+    expected_units: 1 patrol
+    required_units: [patrol]
+    resolution_window_game_min: 1.5
+    thread_id: t_brady
+
+  - id: i_306
+    spawn_time_game_min: 9.0
+    type: medical_cardiac
+    severity: critical
+    address: 318 Brady Street
+    caller_persona: Same resident — now in distress, chest pain
+    expected_units: 1 ambulance
+    required_units: [ambulance_als]
+    resolution_window_game_min: 2.0
+    narrative_hooks:
+      - The earlier calls were the warning signs
+    thread_id: t_brady
+
+  # ── Arc C: peak-noon structure fire (apex) ───────────────────────────
+  - id: i_307
+    spawn_time_game_min: 11.0
+    type: fire_residential
+    severity: critical
+    address: 1402 West 7th Street
+    caller_persona: Neighbor, smoke from second floor
+    expected_units: 1 engine + 1 ladder + 1 ambulance
+    required_units: [engine, ladder, ambulance_als]
+    resolution_window_game_min: 3.5
+    narrative_hooks:
+      - Working fire, occupants reported inside, neighbour breaking window
+    thread_id: t_apex
+
+  # ── Tail: late incidents that test follow-through ────────────────────
+  - id: i_308
+    spawn_time_game_min: 13.5
+    type: police_assault
+    severity: high
+    address: 318 Brady Street
+    caller_persona: Witness, dispute spilled outside
+    expected_units: 1 patrol + 1 ambulance
+    required_units: [patrol, ambulance_als]
+    resolution_window_game_min: 2.0
+    thread_id: t_brady
+
+  - id: i_309
+    spawn_time_game_min: 15.5
+    type: service_call
+    severity: low
+    address: 314 Main Street
+    caller_persona: Bystander, debris in road
+    expected_units: 1 engine
+    required_units: [engine]
+    resolution_window_game_min: 1.5
+
+narrative_threads:
+  - id: t_heatwave
+    arc: Mid-day heat wave drives a cluster of EMS calls. Pace yourself or every ambulance ends up out at once.
+    incident_ids:
+      - i_301
+      - i_302
+      - i_303
+    intel_ids: []
+
+  - id: t_brady
+    arc: The Brady Street caller. The first two calls were the warning. The cardiac is the real one.
+    incident_ids:
+      - i_304
+      - i_305
+      - i_306
+      - i_308
+    intel_ids: []
+
+  - id: t_apex
+    arc: Peak-noon working structure fire. Both fire units must commit; the heat wave makes the timing brutal.
+    incident_ids:
+      - i_307
+    intel_ids: []
+
+intel:
+  - id: it_qc_t3_weather
+    type: weather
+    severity: high
+    body: |
+      Heat advisory in effect. Temp 96°F, heat index 104. Wind 6 from S.
+      Fire-behaviour modifier +0.3 in residential brush sectors.
+      Expect elevated EMS volume — pace ambulance commitments.

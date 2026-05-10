@@ -139,6 +139,38 @@ export function buildShiftIntel(shift: ShiftT): Intel[] {
   }));
 }
 
+/**
+ * Day 11: which narrative arcs are currently in flight.
+ *
+ * An arc is "active" iff at least one of its `incident_ids` is currently
+ * live in the incidents Map AND its status is not resolved/cancelled. Used
+ * by ShiftHUD to surface the storyline the player is in the middle of
+ * without bloating the right rail.
+ */
+export interface ActiveArc {
+  id: string;
+  arc: string;
+}
+
+export function activeNarrativeArcs(
+  shift: ShiftT,
+  liveIncidents: Map<string, Incident>,
+): ActiveArc[] {
+  const out: ActiveArc[] = [];
+  for (const thread of shift.narrative_threads) {
+    let any_live = false;
+    for (const iid of thread.incident_ids) {
+      const inc = liveIncidents.get(iid);
+      if (inc && inc.status !== "resolved" && inc.status !== "cancelled") {
+        any_live = true;
+        break;
+      }
+    }
+    if (any_live) out.push({ id: thread.id, arc: thread.arc });
+  }
+  return out;
+}
+
 // ── outcome scoring ─────────────────────────────────────────────────────
 
 function classify(si: ShiftIncident, live: Incident | undefined): IncidentResult {
