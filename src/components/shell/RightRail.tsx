@@ -156,13 +156,11 @@ function BreadcrumbHeader() {
         Dossier
       </div>
       {selection && (
-        <div className="ml-auto font-mono text-[9px] uppercase tracking-[0.2em] text-accent-cyan">
+        <div className="rr-chip ml-auto">
           {KIND_LABEL[selection.kind]}
-          {hasBack && (
-            <span className="ml-2 text-fg-mute">
-              {back.length}/{back.length + fwd.length + 1}
-            </span>
-          )}
+          <span className="text-fg-mute">
+            {back.length + 1}/{back.length + fwd.length + 1}
+          </span>
         </div>
       )}
     </div>

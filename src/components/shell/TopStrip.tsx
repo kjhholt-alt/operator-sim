@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useFloor } from "@/state/useFloor";
+import { cn } from "@/lib/cn";
 import { ShiftHUD } from "./ShiftHUD";
 
 function useClock() {
@@ -35,6 +36,8 @@ export function TopStrip() {
   const paused = useFloor((s) => s.paused);
   const togglePause = useFloor((s) => s.togglePause);
   const setSpeed = useFloor((s) => s.setSpeed);
+  const view_mode = useFloor((s) => s.view_mode);
+  const setViewMode = useFloor((s) => s.setViewMode);
 
   const activeUnitCount = Array.from(units.values()).filter(
     (u) => u.status === "en_route" || u.status === "on_scene" || u.status === "transporting",
@@ -59,26 +62,49 @@ export function TopStrip() {
   ];
 
   return (
-    <header className="h-14 border-b border-border-subtle bg-bg-panel flex items-center px-4 gap-6 select-none">
-      <div className="flex items-center gap-3 min-w-0">
-        <div className="w-2 h-2 rounded-full bg-accent-emerald animate-pulse shrink-0" />
-        <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-fg-dim shrink-0">
+    <header className="h-14 border-b border-border-subtle bg-bg-panel flex items-center px-3 gap-3 select-none overflow-hidden">
+      {/* ── ts-left: brand + shift HUD ───────────────────────────── */}
+      <div className="flex items-center gap-2.5 min-w-0 flex-1">
+        <span className="opsim-pulse w-2 h-2 rounded-full bg-accent-emerald shrink-0" />
+        <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-fg-base shrink-0">
           Operator Sim
         </div>
-        <div className="font-sans text-[13px] text-fg-base shrink-0">
+        <div className="font-sans text-[13px] text-fg-base shrink-0 hidden xl:block">
           Quad Cities · Sector 1
         </div>
+        <span className="vrule" />
         <ShiftHUD />
       </div>
 
-      <div className="ml-auto flex items-center gap-3">
+      {/* ── ts-right: view-mode / pause / speed / T+ / Zulu / KPIs ── */}
+      <div className="flex items-center gap-2.5 shrink-0">
+        {/* view-mode toggle: MAP (real OSM) ↔ CITY (iso watchfloor) */}
+        <div className="flex items-center border border-border-subtle" role="radiogroup" aria-label="View mode">
+          {(["map", "city"] as const).map((m) => (
+            <button
+              key={m}
+              role="radio"
+              aria-checked={view_mode === m}
+              onClick={() => setViewMode(m)}
+              className={cn(
+                "font-mono text-[10px] uppercase tracking-[0.2em] px-2 py-1 transition-colors",
+                view_mode === m
+                  ? "bg-accent-cyan/15 text-accent-cyan"
+                  : "text-fg-dim hover:text-fg-bright",
+              )}
+            >
+              {m}
+            </button>
+          ))}
+        </div>
         <button
           onClick={togglePause}
-          className={`font-mono text-[10px] uppercase tracking-[0.2em] px-2 py-1 border ${
+          className={cn(
+            "font-mono text-[10px] uppercase tracking-[0.2em] px-2 py-1 border transition-colors",
             paused
               ? "border-accent-amber text-accent-amber"
-              : "border-border-subtle text-fg-dim hover:text-fg-bright"
-          }`}
+              : "border-border-subtle text-fg-dim hover:text-fg-bright",
+          )}
         >
           {paused ? "paused" : "running"}
         </button>
@@ -87,11 +113,12 @@ export function TopStrip() {
             <button
               key={s}
               onClick={() => setSpeed(s as 0.5 | 1 | 2 | 4)}
-              className={`font-mono text-[10px] tabular-nums px-2 py-1 ${
+              className={cn(
+                "font-mono text-[10px] tabular-nums px-2 py-1 transition-colors",
                 speed === s
-                  ? "bg-accent-cyan/20 text-accent-cyan"
-                  : "text-fg-dim hover:text-fg-bright"
-              }`}
+                  ? "bg-accent-cyan/15 text-accent-cyan"
+                  : "text-fg-dim hover:text-fg-bright",
+              )}
             >
               {s}×
             </button>
@@ -100,22 +127,23 @@ export function TopStrip() {
         <div className="font-mono text-[11px] text-accent-cyan tabular-nums">
           {formatGameMin(game_min)}
         </div>
-        <div className="font-mono text-[11px] text-fg-dim tabular-nums">
+        <div className="font-mono text-[10px] text-fg-dim tabular-nums hidden lg:block">
           {formatZulu(now)}
         </div>
-      </div>
 
-      <div className="flex items-center gap-5">
-        {kpis.map((k) => (
-          <div key={k.label} className="flex flex-col items-end leading-tight">
-            <div className="font-mono text-[9px] uppercase tracking-[0.2em] text-fg-dim">
-              {k.label}
+        {/* KPI block — vertical separator + 4-5 metrics, right-aligned values */}
+        <div className="flex items-center gap-4 pl-3 border-l border-border-subtle ml-1">
+          {kpis.map((k) => (
+            <div key={k.label} className="flex flex-col items-end leading-[1.05]">
+              <div className="font-mono text-[9px] uppercase tracking-[0.2em] text-fg-dim">
+                {k.label}
+              </div>
+              <div className={cn("font-mono text-[15px] tabular-nums", `text-${k.tone}`)}>
+                {k.value}
+              </div>
             </div>
-            <div className={`font-mono text-[15px] tabular-nums text-${k.tone}`}>
-              {k.value}
-            </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </header>
   );

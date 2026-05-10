@@ -2,9 +2,9 @@
 
 > Updated by Producer agent every 30 min during active sprints. This file IS the truth.
 
-**Last updated:** 2026-05-09 — end of Day 11 autonomous run · Phase 2 in flight
-**Phase:** Day 0–11 ✅ · Phase 2 (variety) — Tier 3 shift + narrative arcs shipped
-**Build:** v0.0.11-day11
+**Last updated:** 2026-05-09 — end of Day 12 autonomous run · Phase 2 in flight
+**Phase:** Day 0–12 ✅ · Phase 2 (variety) — Watchfloor design landed (claude.ai/design v1+v2)
+**Build:** v0.0.12-day12
 **Repo:** [github.com/kjhholt-alt/operator-sim](https://github.com/kjhholt-alt/operator-sim)
 **End-of-year goal:** Steam Early Access launch by 2026-12-31. See `docs/GDD.md` § 11 for the 8-phase roadmap.
 **CI:** workflows green; `npm run validate:shifts` runs against the shipped Tier-1 YAML.
@@ -42,7 +42,8 @@ At T+12:00 the win/loss summary lands with an S/A/B/C/D grade.
 | 8 | Multi-unit incidents (`required_units`) · Tier 2 shift YAML · 4-class roster (engine/ladder/ambulance/patrol) · per-incident dwell-start gate · dossier requirement chip · 4 multi-unit tests | 69 | `540a7b3` |
 | 9 | ShiftLobby panel · `start`/`restart`/`end_shift`/`lobby` verbs · `shift` slot kind in palette · returnToLobby resets roster to homebases · ShiftSummary footer adds Restart + Return-to-Lobby · 12 lobby tests | 81 | `341cc90` |
 | 10 | 2nd station (Davenport East) · roster grew 4→6 units · `assign <incident>` verb auto-picks closest available units per required class · `pickClosestAvailable` haversine helper · 12 closest-unit tests | 93 | `0b3df49` |
-| 11 | Tier 3 shift YAML (`qc_tier3_001`, 18 min, 9 incidents, 3 narrative arcs) · `activeNarrativeArcs` helper · ShiftHUD now shows live arc chips (violet) for in-flight storylines · 8 thread/Tier-3 tests | **101** | (this commit) |
+| 11 | Tier 3 shift YAML (`qc_tier3_001`, 18 min, 9 incidents, 3 narrative arcs) · `activeNarrativeArcs` helper · ShiftHUD now shows live arc chips (violet) for in-flight storylines · 8 thread/Tier-3 tests | 101 | `7fbe3b7` |
+| 12 | Watchfloor design ported (claude.ai/design v1+v2) — scrolling tagged BottomTicker · CenterOverlays (Incident Queue + Shift Rundown + sparkline) · LeftRail accent-cyan active bar · RightRail bordered KIND/depth chip · TopStrip vrule layout · 2.5D isometric city view + day/night cycle + MAP/CITY toggle (`view_mode` in floor store) · live entities project from address bbox onto iso grid · `iso-ripple` keyframe | **101** | (this commit) |
 
 ## 65/65 tests · `tsc --noEmit` clean · `vite build` 13s · 1.86 MB / 531 KB gzipped
 

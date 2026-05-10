@@ -48,3 +48,4 @@ src-tauri/.cargo/
 # Claude / agent scratch
 .claude/worktrees/
 .discord-payload.json
+.discord-day*.json

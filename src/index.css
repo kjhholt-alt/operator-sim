@@ -73,3 +73,265 @@ html, body, #root {
   outline: 1px solid var(--color-accent-cyan);
   outline-offset: 1px;
 }
+
+/*
+ * ─────────────────────────────────────────────────────────────────────────
+ * Watchfloor design layer — Day 12.
+ *
+ * Ported from claude.ai/design "Operator Sim Watchfloor" handoff bundle.
+ * Class names track the design 1:1 so future iterations stay aligned.
+ * Tailwind handles atomic styling everywhere else; these classes carry
+ * the bespoke cards, ticker animation, and stateful row decorations.
+ * ─────────────────────────────────────────────────────────────────────────
+ */
+
+/* ── pulse dot (used in ticker + topstrip) ────────────────────────────── */
+.opsim-pulse { animation: opsim-pulse 1.6s ease-in-out infinite; }
+@keyframes opsim-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.45; transform: scale(0.85); }
+}
+
+/* ── small vertical separator ─────────────────────────────────────────── */
+.vrule {
+  width: 1px;
+  height: 22px;
+  background: var(--color-border-subtle);
+  margin: 0 4px;
+  flex-shrink: 0;
+}
+
+/* ── LeftRail active-row accent bar ───────────────────────────────────── */
+.lr-row {
+  position: relative;
+}
+.lr-row.is-active::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--color-accent-cyan);
+}
+
+/* ── RightRail breadcrumb chip ────────────────────────────────────────── */
+.rr-chip {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--color-accent-cyan);
+  padding: 2px 6px;
+  border: 1px solid rgba(74, 216, 230, 0.4);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+/* ── BottomTicker scrolling track ─────────────────────────────────────── */
+.bt-track-wrap {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+}
+.bt-track {
+  display: flex;
+  gap: 14px;
+  white-space: nowrap;
+  animation: bt-roll 36s linear infinite;
+  will-change: transform;
+}
+.bt-track.is-paused { animation-play-state: paused; }
+.bt-event { display: inline-flex; align-items: center; gap: 8px; }
+.bt-tag {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  padding: 1px 5px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  border: 1px solid var(--color-border-subtle);
+}
+.bt-tag.tag-incoming { color: var(--color-accent-cyan); border-color: rgba(74,216,230,0.4); }
+.bt-tag.tag-arrival { color: var(--color-accent-emerald); border-color: rgba(63,217,127,0.4); }
+.bt-tag.tag-route { color: var(--color-accent-amber); border-color: rgba(240,184,90,0.4); }
+.bt-tag.tag-dispatch { color: var(--color-accent-cyan); border-color: rgba(74,216,230,0.4); }
+.bt-tag.tag-radio,
+.bt-tag.tag-rts,
+.bt-tag.tag-system { color: var(--color-fg-dim); }
+.bt-tag.tag-alarm { color: var(--color-accent-crimson); border-color: rgba(236,91,107,0.4); }
+.bt-tag.tag-bolo { color: var(--color-accent-violet); border-color: rgba(160,122,255,0.4); }
+.bt-tag.tag-weather { color: var(--color-accent-amber); border-color: rgba(240,184,90,0.4); }
+.bt-tag.tag-resolved { color: var(--color-accent-emerald); border-color: rgba(63,217,127,0.4); }
+.bt-tag.tag-default { color: var(--color-fg-dim); }
+.bt-sep { color: var(--color-fg-mute); }
+@keyframes bt-roll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* ── Map overlay cards (incident queue + shift rundown) ───────────────── */
+.map-card {
+  position: absolute;
+  background: rgba(13, 17, 28, 0.92);
+  border: 1px solid var(--color-border-subtle);
+  font-family: var(--font-mono);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+.map-queue {
+  top: 12px;
+  right: 56px;
+  width: 320px;
+  max-width: calc(100% - 70px);
+}
+.map-rundown {
+  top: 232px;
+  right: 12px;
+  width: 320px;
+  max-width: calc(100% - 24px);
+}
+@media (max-width: 1200px) {
+  .map-queue { width: 280px; right: 48px; }
+  .map-rundown { width: 280px; top: 220px; }
+}
+.card-h {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--color-border-subtle);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  color: var(--color-fg-dim);
+}
+.card-h .h-title { color: var(--color-fg-base); }
+.card-foot {
+  border-top: 1px solid var(--color-border-subtle);
+  padding: 6px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* incident queue rows */
+.queue-list { display: flex; flex-direction: column; }
+.queue-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-bottom: 1px solid rgba(26, 34, 53, 0.6);
+  font-size: 10px;
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+.queue-row:hover { background: var(--color-bg-hover); }
+.queue-row.pri-1 { border-left: 2px solid var(--color-accent-crimson); }
+.queue-row.pri-2 { border-left: 2px solid var(--color-accent-amber); }
+.queue-row.pri-3 { border-left: 2px solid var(--color-fg-dim); }
+.queue-row.pri-4 { border-left: 2px solid var(--color-border-bright); }
+.queue-row .qcol-t { width: 44px; color: var(--color-accent-cyan); }
+.queue-row .qcol-id { width: 50px; color: var(--color-fg-bright); }
+.queue-row .qcol-type { flex: 1; color: var(--color-fg-base); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.queue-row .qcol-addr { width: 96px; color: var(--color-fg-mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sev {
+  font-size: 8px;
+  padding: 1px 4px;
+  border: 1px solid var(--color-border-subtle);
+  letter-spacing: 0.18em;
+}
+.sev-low { color: var(--color-fg-base); }
+.sev-moderate, .sev-mod { color: var(--color-accent-amber); border-color: rgba(240,184,90,0.4); }
+.sev-high, .sev-hi { color: var(--color-accent-amber); border-color: rgba(240,184,90,0.4); }
+.sev-critical, .sev-crit { color: var(--color-accent-crimson); border-color: rgba(236,91,107,0.4); }
+.qstat {
+  font-size: 8px;
+  padding: 1px 4px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.qstat-on_scene { color: var(--color-accent-cyan); }
+.qstat-en_route, .qstat-dispatched { color: var(--color-accent-amber); }
+.qstat-queued, .qstat-reported { color: var(--color-fg-dim); }
+.qstat-resolved { color: var(--color-accent-emerald); }
+
+/* severity bars (footer of incident queue) */
+.sev-bars {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.sev-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 9px;
+}
+.sev-meter {
+  flex: 1;
+  height: 4px;
+  background: var(--color-border-subtle);
+}
+.sev-fill { height: 100%; }
+
+/* shift rundown rows */
+.rundown-list {
+  display: flex;
+  flex-direction: column;
+  max-height: 175px;
+  overflow-y: auto;
+}
+.rundown-row {
+  display: grid;
+  grid-template-columns: 44px 8px 1fr 64px;
+  gap: 8px;
+  align-items: center;
+  padding: 4px 10px;
+  border-bottom: 1px solid rgba(26, 34, 53, 0.6);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+.rundown-dot { width: 6px; height: 6px; }
+.dot-pass, .dot-resolved { background: var(--color-accent-emerald); }
+.dot-active, .dot-on_scene { background: var(--color-accent-cyan); }
+.dot-queued, .dot-reported, .dot-dispatched { background: var(--color-fg-dim); }
+.dot-forecast { background: transparent; border: 1px dashed var(--color-fg-mute); }
+.rundown-state {
+  font-size: 8px;
+  letter-spacing: 0.2em;
+  padding: 1px 4px;
+  text-transform: uppercase;
+  text-align: center;
+}
+.state-tag-pass, .state-tag-resolved { color: var(--color-accent-emerald); }
+.state-tag-active, .state-tag-on_scene { color: var(--color-accent-cyan); border: 1px solid rgba(74,216,230,0.4); }
+.state-tag-queued, .state-tag-reported, .state-tag-dispatched { color: var(--color-fg-dim); border: 1px solid var(--color-border-subtle); }
+.state-tag-forecast { color: var(--color-accent-violet); border: 1px dashed rgba(160,122,255,0.5); }
+
+/* sparkline + stats (rundown footer) */
+.spark { display: block; }
+.spark-stats {
+  display: flex;
+  gap: 14px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+.spark-stats .spark-l { font-size: 9px; color: var(--color-fg-mute); }
+.spark-stats .spark-v { font-size: 11px; color: var(--color-fg-bright); font-variant-numeric: tabular-nums; }
+.spark-stats .spark-v-amber { color: var(--color-accent-amber); }
+
+/*
+ * ── Isometric city (Day 13) ──────────────────────────────────────────
+ *
+ * Ripple animation for river dashes on the iso city view. The keyframe
+ * just shifts the dash offset so the dashes appear to flow downstream.
+ */
+@keyframes iso-ripple {
+  0%   { stroke-dashoffset: 0; }
+  100% { stroke-dashoffset: -12; }
+}

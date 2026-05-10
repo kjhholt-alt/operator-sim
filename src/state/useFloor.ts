@@ -41,6 +41,18 @@ export interface Camera {
 
 export type ShiftStatus = "idle" | "running" | "complete";
 
+/**
+ * Day 13: which center-pane renderer the operator is looking at.
+ *
+ *   "map"  — MapLibre GL on real OSM tiles (the default; Day 0–11 work).
+ *   "city" — 2.5D isometric procedural city with day/night cycle (the
+ *            claude.ai/design "Watchfloor" handoff bundle).
+ *
+ * Both views read the same floor entities; they're alternate render
+ * surfaces, not alternate sims.
+ */
+export type ViewMode = "map" | "city";
+
 export interface FloorState {
   // ── time ──
   speed: SimSpeed;
@@ -90,6 +102,15 @@ export interface FloorState {
   // ── world geometry ──
   road_graph: RoadGraph | null;
 
+  // ── view mode (Day 13) ──
+  view_mode: ViewMode;
+  /**
+   * Optional time-of-day override for the iso city view (0..1 wrap-around,
+   * 0 = midnight, 0.5 = noon). Null = auto-cycle on the iso clock. Has no
+   * effect in "map" mode.
+   */
+  city_tod_override: number | null;
+
   // ── meta ──
   last_event_log: Array<{ ts: number; game_min: number; text: string }>;
 
@@ -106,6 +127,11 @@ export interface FloorState {
   upsertUnit: (u: Unit) => void;
   upsertIncident: (i: Incident) => void;
   logEvent: (text: string) => void;
+
+  // ── view-mode actions (Day 13) ──
+  setViewMode: (mode: ViewMode) => void;
+  toggleViewMode: () => void;
+  setCityTodOverride: (tod: number | null) => void;
 
   // ── shift actions ──
   loadShift: (shift: Shift) => void;
@@ -156,6 +182,9 @@ export const useFloor = create<FloorState>()(
     camera: { center: QC_CENTER, zoom: 12 },
 
     road_graph: null,
+
+    view_mode: "map",
+    city_tod_override: null,
 
     last_event_log: [],
 
@@ -232,6 +261,16 @@ export const useFloor = create<FloorState>()(
           ...s.last_event_log,
         ].slice(0, 200),
       }));
+    },
+
+    setViewMode(mode) {
+      set({ view_mode: mode });
+    },
+    toggleViewMode() {
+      set((s) => ({ view_mode: s.view_mode === "map" ? "city" : "map" }));
+    },
+    setCityTodOverride(tod) {
+      set({ city_tod_override: tod });
     },
 
     loadShift(shift) {

@@ -90,8 +90,8 @@ export function LeftRail({ className }: Props) {
                   }
                 }}
                 className={cn(
-                  "w-full text-left px-3 py-2 border-b border-border-subtle transition-colors flex items-center justify-between group",
-                  sectionActive ? "bg-bg-hover" : "hover:bg-bg-hover",
+                  "lr-row w-full text-left px-3 py-2 border-b border-border-subtle transition-colors flex items-center justify-between group",
+                  sectionActive ? "is-active bg-bg-hover" : "hover:bg-bg-hover",
                 )}
               >
                 <span
