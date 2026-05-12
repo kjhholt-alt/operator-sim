@@ -23,6 +23,7 @@ import qcTier2Yaml from "../../data/shifts/qc_tier2_001.yaml?raw";
 import qcTier3Yaml from "../../data/shifts/qc_tier3_001.yaml?raw";
 import qcPolice1Yaml from "../../data/shifts/qc_police_001.yaml?raw";
 import { listSaves } from "./persist";
+import { loadCareerProgress, subscribeShiftCompletion } from "./career";
 
 const QC_CENTER: [number, number] = [-90.5776, 41.5236];
 
@@ -203,4 +204,17 @@ export async function bootFloor(city = "quad_cities") {
   } catch (err) {
     f.logEvent(`saves cache · hydration failed (${err instanceof Error ? err.message : String(err)})`);
   }
+
+  // Day 14: career progress. Load the persisted completion set + wire
+  // the subscription that marks future shift completions.
+  try {
+    const progress = await loadCareerProgress();
+    useFloor.getState().setCareerProgress(progress);
+    if (progress.completed_shift_ids.length > 0) {
+      f.logEvent(`career · ${progress.completed_shift_ids.length} shift${progress.completed_shift_ids.length === 1 ? "" : "s"} completed`);
+    }
+  } catch (err) {
+    f.logEvent(`career · hydration failed (${err instanceof Error ? err.message : String(err)})`);
+  }
+  subscribeShiftCompletion();
 }

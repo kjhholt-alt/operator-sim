@@ -32,6 +32,17 @@ export interface SaveSlot {
   snapshot: unknown;
 }
 
+/**
+ * Day 14 — career progress. One singleton row (`id = "default"`)
+ * tracks which shift IDs the player has finished. Drives the lobby's
+ * locked/unlocked gating.
+ */
+export interface CareerProgress {
+  id: string;
+  completed_shift_ids: string[];
+  last_completed_at: string | null;
+}
+
 class OperatorSimDB extends Dexie {
   units!: EntityTable<Unit, "id">;
   incidents!: EntityTable<Incident, "id">;
@@ -43,6 +54,7 @@ class OperatorSimDB extends Dexie {
   vehicles!: EntityTable<Vehicle, "id">;
   shifts!: EntityTable<Shift, "id">;
   saves!: EntityTable<SaveSlot, "id">;
+  progress!: EntityTable<CareerProgress, "id">;
 
   constructor() {
     super("operator-sim");
@@ -57,6 +69,11 @@ class OperatorSimDB extends Dexie {
       vehicles: "id, callsign, class, homebase_station_id, status",
       shifts: "id, date, difficulty_tier, city",
       saves: "id, saved_at",
+    });
+    // Day 14 — add career progress table. Additive, no migration needed
+    // beyond Dexie auto-handling the version bump.
+    this.version(2).stores({
+      progress: "id",
     });
   }
 }

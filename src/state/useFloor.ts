@@ -118,6 +118,15 @@ export interface FloorState {
   // SavesPanel UI.
   available_saves: SaveSlot[];
 
+  // ── career progress (Day 14) ──
+  // Mirrors the singleton row in Dexie's `progress` table. completed_shift_ids
+  // grows as shifts are finished; ShiftLobby reads this to gate locked
+  // tiers behind earlier completions.
+  career_progress: {
+    completed_shift_ids: string[];
+    last_completed_at: string | null;
+  };
+
   // ── meta ──
   last_event_log: Array<{ ts: number; game_min: number; text: string }>;
 
@@ -142,6 +151,9 @@ export interface FloorState {
 
   // ── saves actions (Day 14) ──
   setAvailableSaves: (saves: SaveSlot[]) => void;
+
+  // ── career actions (Day 14) ──
+  setCareerProgress: (p: { completed_shift_ids: string[]; last_completed_at: string | null }) => void;
 
   // ── shift actions ──
   loadShift: (shift: Shift) => void;
@@ -197,6 +209,8 @@ export const useFloor = create<FloorState>()(
     city_tod_override: null,
 
     available_saves: [],
+
+    career_progress: { completed_shift_ids: [], last_completed_at: null },
 
     last_event_log: [],
 
@@ -287,6 +301,10 @@ export const useFloor = create<FloorState>()(
 
     setAvailableSaves(saves) {
       set({ available_saves: saves });
+    },
+
+    setCareerProgress(p) {
+      set({ career_progress: { ...p, completed_shift_ids: [...p.completed_shift_ids] } });
     },
 
     loadShift(shift) {
