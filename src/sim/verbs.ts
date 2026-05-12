@@ -21,6 +21,7 @@ import {
   saveSnapshot,
   slugForSaveName,
 } from "@/state/persist";
+import { computeUnlockedShifts } from "@/state/career";
 
 // ── Slots ──────────────────────────────────────────────────────────────
 
@@ -264,6 +265,13 @@ const startVerb: Verb = {
     }
     const shift = s.available_shifts.find((sh) => sh.id === shiftArg);
     if (!shift) return { ok: false, reason: `unknown shift ${shiftArg}` };
+    // Day 14: enforce career gating in the verb too. The UI grays out
+    // locked shifts but a player typing the id directly should hit the
+    // same wall.
+    const unlocked = computeUnlockedShifts(s.available_shifts, s.career_progress.completed_shift_ids);
+    if (!unlocked.has(shift.id)) {
+      return { ok: false, reason: `${shift.id} is locked — finish the earlier tier first` };
+    }
     s.loadShift(shift);
     return { ok: true, text: `armed ${shift.id} (tier ${shift.difficulty_tier}, ${shift.length_game_min} min, ${shift.incidents.length} incidents)` };
   },

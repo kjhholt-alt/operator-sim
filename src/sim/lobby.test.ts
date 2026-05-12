@@ -90,6 +90,10 @@ function bootLobby(): { t1: Shift; t2: Shift } {
     selection: null,
     nav_back: [],
     nav_forward: [],
+    // Day 14: tests pre-date career gating. Unlock everything so the
+    // existing assertions still pass — gating itself is tested in
+    // career.test.ts.
+    career_progress: { completed_shift_ids: ["t1", "t2"], last_completed_at: null },
   });
   return { t1, t2 };
 }
@@ -185,6 +189,33 @@ describe("Day 9 lobby state", () => {
     useFloor.getState().returnToLobby();
     const s = useFloor.getState();
     expect(s.available_shifts).toHaveLength(2);
+  });
+});
+
+describe("Day 14 career gating on start verb", () => {
+  beforeEach(() => bootLobby());
+
+  it("locks tier 2 until tier 1 is completed (verb-level rejection)", () => {
+    // Wipe progress so nothing is unlocked except tier 1.
+    useFloor.setState({ career_progress: { completed_shift_ids: [], last_completed_at: null } });
+    const r = executeInput("start t2");
+    expect(r.ok).toBe(false);
+    expect(r.text).toMatch(/locked/);
+    expect(useFloor.getState().shift_status).toBe("idle");
+  });
+
+  it("allows tier 1 even with no completions", () => {
+    useFloor.setState({ career_progress: { completed_shift_ids: [], last_completed_at: null } });
+    const r = executeInput("start t1");
+    expect(r.ok).toBe(true);
+    expect(useFloor.getState().shift_status).toBe("running");
+  });
+
+  it("unlocks tier 2 once tier 1 is in completed_shift_ids", () => {
+    useFloor.setState({ career_progress: { completed_shift_ids: ["t1"], last_completed_at: "now" } });
+    const r = executeInput("start t2");
+    expect(r.ok).toBe(true);
+    expect(useFloor.getState().shift_status).toBe("running");
   });
 });
 
