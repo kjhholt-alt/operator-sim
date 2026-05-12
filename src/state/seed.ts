@@ -3,10 +3,11 @@
  * Operator Sim — boot-time seed.
  *
  * Day 9: hydrates the floor with the baked OSM dataset (addresses, road
- * graph) + the static roster (1 station, 4 units, 6 personnel), then loads
- * every shipped shift YAML into `available_shifts`. The game boots into the
- * **lobby** (shift_status = "idle") — the player picks Tier 1 or Tier 2 from
- * the ShiftLobby panel, which calls `loadShift(...)` and the timeline starts.
+ * graph) + the static roster (2 stations, 8 units, 12 personnel — Day-14
+ * roster after K9 + SWAT were added), then loads every shipped shift YAML
+ * into `available_shifts`. The game boots into the **lobby** (shift_status =
+ * "idle") — the player picks Tier 1 or Tier 2 from the ShiftLobby panel,
+ * which calls `loadShift(...)` and the timeline starts.
  *
  * Idempotent: safe to call multiple times (clears + re-seeds).
  */
@@ -95,38 +96,47 @@ export async function bootFloor(city = "quad_cities") {
     addresses.find((a) => a.id === stEast.address_id)?.coord ??
     [QC_CENTER[0] + 0.025, QC_CENTER[1] + 0.005];
 
-  // Day 10: 6 units across 2 stations. Central has full coverage; East has
-  // engine + ambulance. Closest-unit auto-pick (`assign <incident>`) is now
-  // meaningful since the same incident can be answered from either station.
+  // Day 10: 6 units across 2 stations. Day 14: add K9-1 + S1 to round out
+  // the police side so multi-class police shifts have something to assign.
+  // Central has full coverage (E1/L1/M1/P1/K9-1/S1); East has engine + ambulance.
   const vehicles: Vehicle[] = [
-    { id: "v_e1",  callsign: "E1",  class: "engine",        homebase_station_id: stCentral.id, purchased_at: "2026-05-09T00:00:00Z", status: "operational", mileage_km: 0 },
-    { id: "v_l1",  callsign: "L1",  class: "ladder",        homebase_station_id: stCentral.id, purchased_at: "2026-05-09T00:00:00Z", status: "operational", mileage_km: 0 },
-    { id: "v_m1",  callsign: "M1",  class: "ambulance_als", homebase_station_id: stCentral.id, purchased_at: "2026-05-09T00:00:00Z", status: "operational", mileage_km: 0 },
-    { id: "v_p1",  callsign: "P1",  class: "patrol",        homebase_station_id: stCentral.id, purchased_at: "2026-05-09T00:00:00Z", status: "operational", mileage_km: 0 },
-    { id: "v_e2",  callsign: "E2",  class: "engine",        homebase_station_id: stEast.id,    purchased_at: "2026-05-09T00:00:00Z", status: "operational", mileage_km: 0 },
-    { id: "v_m2",  callsign: "M2",  class: "ambulance_als", homebase_station_id: stEast.id,    purchased_at: "2026-05-09T00:00:00Z", status: "operational", mileage_km: 0 },
+    { id: "v_e1",  callsign: "E1",   class: "engine",        homebase_station_id: stCentral.id, purchased_at: "2026-05-09T00:00:00Z", status: "operational", mileage_km: 0 },
+    { id: "v_l1",  callsign: "L1",   class: "ladder",        homebase_station_id: stCentral.id, purchased_at: "2026-05-09T00:00:00Z", status: "operational", mileage_km: 0 },
+    { id: "v_m1",  callsign: "M1",   class: "ambulance_als", homebase_station_id: stCentral.id, purchased_at: "2026-05-09T00:00:00Z", status: "operational", mileage_km: 0 },
+    { id: "v_p1",  callsign: "P1",   class: "patrol",        homebase_station_id: stCentral.id, purchased_at: "2026-05-09T00:00:00Z", status: "operational", mileage_km: 0 },
+    { id: "v_k1",  callsign: "K9-1", class: "k9",            homebase_station_id: stCentral.id, purchased_at: "2026-05-09T00:00:00Z", status: "operational", mileage_km: 0 },
+    { id: "v_s1",  callsign: "S1",   class: "swat_armored",  homebase_station_id: stCentral.id, purchased_at: "2026-05-09T00:00:00Z", status: "operational", mileage_km: 0 },
+    { id: "v_e2",  callsign: "E2",   class: "engine",        homebase_station_id: stEast.id,    purchased_at: "2026-05-09T00:00:00Z", status: "operational", mileage_km: 0 },
+    { id: "v_m2",  callsign: "M2",   class: "ambulance_als", homebase_station_id: stEast.id,    purchased_at: "2026-05-09T00:00:00Z", status: "operational", mileage_km: 0 },
   ];
 
-  // 9 personnel — enough to crew all 6 units (single shift).
+  // 12 personnel — enough to crew all 8 units (single shift). p_010..p_012
+  // ride the K9 and SWAT units; handler + 2 operators is the absolute minimum
+  // SWAT loadout (Day 14 is "stub" police agency, not a SWAT module).
   const personnel: Personnel[] = [
-    { id: "p_001", name: "Lt. Diaz",     role: "lieutenant",  homebase_station_id: stCentral.id, hire_date: "2026-03-12T00:00:00Z", skills: ["paramedic"], schedule_template: "standard", active: true },
-    { id: "p_002", name: "FF Hong",      role: "firefighter", homebase_station_id: stCentral.id, hire_date: "2026-03-15T00:00:00Z", skills: [], schedule_template: "standard", active: true },
-    { id: "p_003", name: "FF Patel",     role: "firefighter", homebase_station_id: stCentral.id, hire_date: "2026-04-02T00:00:00Z", skills: ["hazmat"], schedule_template: "standard", active: true },
-    { id: "p_004", name: "Medic Reyes",  role: "paramedic",   homebase_station_id: stCentral.id, hire_date: "2026-04-18T00:00:00Z", skills: ["als"], schedule_template: "standard", active: true },
-    { id: "p_005", name: "EMT Walker",   role: "emt",         homebase_station_id: stCentral.id, hire_date: "2026-04-22T00:00:00Z", skills: [], schedule_template: "standard", active: true },
-    { id: "p_006", name: "Off. Cole",    role: "officer",     homebase_station_id: stCentral.id, hire_date: "2026-04-29T00:00:00Z", skills: [], schedule_template: "standard", active: true },
-    { id: "p_007", name: "Capt. Iverson", role: "captain",    homebase_station_id: stEast.id,    hire_date: "2026-03-08T00:00:00Z", skills: [], schedule_template: "standard", active: true },
-    { id: "p_008", name: "FF Bauer",     role: "firefighter", homebase_station_id: stEast.id,    hire_date: "2026-03-21T00:00:00Z", skills: [], schedule_template: "standard", active: true },
-    { id: "p_009", name: "Medic Liu",    role: "paramedic",   homebase_station_id: stEast.id,    hire_date: "2026-04-12T00:00:00Z", skills: ["als"], schedule_template: "standard", active: true },
+    { id: "p_001", name: "Lt. Diaz",     role: "lieutenant",    homebase_station_id: stCentral.id, hire_date: "2026-03-12T00:00:00Z", skills: ["paramedic"], schedule_template: "standard", active: true },
+    { id: "p_002", name: "FF Hong",      role: "firefighter",   homebase_station_id: stCentral.id, hire_date: "2026-03-15T00:00:00Z", skills: [], schedule_template: "standard", active: true },
+    { id: "p_003", name: "FF Patel",     role: "firefighter",   homebase_station_id: stCentral.id, hire_date: "2026-04-02T00:00:00Z", skills: ["hazmat"], schedule_template: "standard", active: true },
+    { id: "p_004", name: "Medic Reyes",  role: "paramedic",     homebase_station_id: stCentral.id, hire_date: "2026-04-18T00:00:00Z", skills: ["als"], schedule_template: "standard", active: true },
+    { id: "p_005", name: "EMT Walker",   role: "emt",           homebase_station_id: stCentral.id, hire_date: "2026-04-22T00:00:00Z", skills: [], schedule_template: "standard", active: true },
+    { id: "p_006", name: "Off. Cole",    role: "officer",       homebase_station_id: stCentral.id, hire_date: "2026-04-29T00:00:00Z", skills: [], schedule_template: "standard", active: true },
+    { id: "p_007", name: "Capt. Iverson", role: "captain",      homebase_station_id: stEast.id,    hire_date: "2026-03-08T00:00:00Z", skills: [], schedule_template: "standard", active: true },
+    { id: "p_008", name: "FF Bauer",     role: "firefighter",   homebase_station_id: stEast.id,    hire_date: "2026-03-21T00:00:00Z", skills: [], schedule_template: "standard", active: true },
+    { id: "p_009", name: "Medic Liu",    role: "paramedic",     homebase_station_id: stEast.id,    hire_date: "2026-04-12T00:00:00Z", skills: ["als"], schedule_template: "standard", active: true },
+    { id: "p_010", name: "Off. Marek",   role: "officer",       homebase_station_id: stCentral.id, hire_date: "2026-04-30T00:00:00Z", skills: ["k9_handler"], schedule_template: "standard", active: true },
+    { id: "p_011", name: "Sgt. Yoon",    role: "swat_operator", homebase_station_id: stCentral.id, hire_date: "2026-02-14T00:00:00Z", skills: ["breacher"], schedule_template: "standard", active: true },
+    { id: "p_012", name: "Op. Tate",     role: "swat_operator", homebase_station_id: stCentral.id, hire_date: "2026-02-14T00:00:00Z", skills: ["marksman"], schedule_template: "standard", active: true },
   ];
 
   const units: Unit[] = [
-    { id: "u_e1",  callsign: "E1",  vehicle_id: "v_e1",  homebase_station_id: stCentral.id, status: "available", status_since_game_min: 0, current_position: QC_CENTER, crew: ["p_001", "p_002", "p_003"] },
-    { id: "u_l1",  callsign: "L1",  vehicle_id: "v_l1",  homebase_station_id: stCentral.id, status: "available", status_since_game_min: 0, current_position: QC_CENTER, crew: ["p_002"] },
-    { id: "u_m1",  callsign: "M1",  vehicle_id: "v_m1",  homebase_station_id: stCentral.id, status: "available", status_since_game_min: 0, current_position: QC_CENTER, crew: ["p_004", "p_005"] },
-    { id: "u_p1",  callsign: "P1",  vehicle_id: "v_p1",  homebase_station_id: stCentral.id, status: "available", status_since_game_min: 0, current_position: QC_CENTER, crew: ["p_006"] },
-    { id: "u_e2",  callsign: "E2",  vehicle_id: "v_e2",  homebase_station_id: stEast.id,    status: "available", status_since_game_min: 0, current_position: stEastCoord, crew: ["p_007", "p_008"] },
-    { id: "u_m2",  callsign: "M2",  vehicle_id: "v_m2",  homebase_station_id: stEast.id,    status: "available", status_since_game_min: 0, current_position: stEastCoord, crew: ["p_009"] },
+    { id: "u_e1",   callsign: "E1",   vehicle_id: "v_e1",  homebase_station_id: stCentral.id, status: "available", status_since_game_min: 0, current_position: QC_CENTER, crew: ["p_001", "p_002", "p_003"] },
+    { id: "u_l1",   callsign: "L1",   vehicle_id: "v_l1",  homebase_station_id: stCentral.id, status: "available", status_since_game_min: 0, current_position: QC_CENTER, crew: ["p_002"] },
+    { id: "u_m1",   callsign: "M1",   vehicle_id: "v_m1",  homebase_station_id: stCentral.id, status: "available", status_since_game_min: 0, current_position: QC_CENTER, crew: ["p_004", "p_005"] },
+    { id: "u_p1",   callsign: "P1",   vehicle_id: "v_p1",  homebase_station_id: stCentral.id, status: "available", status_since_game_min: 0, current_position: QC_CENTER, crew: ["p_006"] },
+    { id: "u_k1",   callsign: "K9-1", vehicle_id: "v_k1",  homebase_station_id: stCentral.id, status: "available", status_since_game_min: 0, current_position: QC_CENTER, crew: ["p_010"] },
+    { id: "u_s1",   callsign: "S1",   vehicle_id: "v_s1",  homebase_station_id: stCentral.id, status: "available", status_since_game_min: 0, current_position: QC_CENTER, crew: ["p_011", "p_012"] },
+    { id: "u_e2",   callsign: "E2",   vehicle_id: "v_e2",  homebase_station_id: stEast.id,    status: "available", status_since_game_min: 0, current_position: stEastCoord, crew: ["p_007", "p_008"] },
+    { id: "u_m2",   callsign: "M2",   vehicle_id: "v_m2",  homebase_station_id: stEast.id,    status: "available", status_since_game_min: 0, current_position: stEastCoord, crew: ["p_009"] },
   ];
 
   // 1 demo caller — kept so the right-rail drill-down has prior data to

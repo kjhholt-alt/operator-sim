@@ -121,7 +121,7 @@ export function ShiftLobby() {
             ctrl+k → <kbd className="text-fg-base">start</kbd> to arm via palette
           </span>
           <span className="font-mono text-[10px] text-fg-dim uppercase tracking-[0.18em]">
-            roster · 6 units · 2 stations
+            roster · 8 units · 2 stations
           </span>
         </div>
       </div>
