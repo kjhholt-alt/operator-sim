@@ -2,13 +2,13 @@
 
 > Updated by Producer agent every 30 min during active sprints. This file IS the truth.
 
-**Last updated:** 2026-05-09 — end of Day 13 autonomous run · Phase 2 in flight
-**Phase:** Day 0–13 ✅ · Phase 2 (variety) — agency filtering + station markers + per-incident response lines
-**Build:** v0.0.13-day13 (master) · `feat/war-smoke` branch carries Day 12.5 (not merged)
+**Last updated:** 2026-05-11 — Day 14 sprint shipped (variety unlock)
+**Phase:** Day 0–14 ✅ · Phase 2 (variety) — save/replay, full QC bake, police agency v1, career gating, Steam page drafted
+**Build:** v0.0.14-day14 (master) · `feat/war-smoke` branch carries Day 12.5 (not merged)
 **Repo:** [github.com/kjhholt-alt/operator-sim](https://github.com/kjhholt-alt/operator-sim)
 **End-of-year goal:** Steam Early Access launch by 2026-12-31. See `docs/GDD.md` § 11 for the 8-phase roadmap.
-**CI:** workflows green; `npm run validate:shifts` runs against the shipped Tier-1 YAML.
-**Open touchpoint:** **Touchpoint #1 — "Does it feel like Operator Sim?"** Posted to `#claude-chat`.
+**CI:** workflows green; `npm run validate:shifts` covers 4 shifts (3 tiers + police lane).
+**Open touchpoint:** **Touchpoint #1 — "Does it feel like Operator Sim?"** Posted to `#claude-chat`. Day 14 ships variety so the touchpoint answer has more surface to test.
 **Blockers:** none
 
 ---
@@ -44,9 +44,10 @@ At T+12:00 the win/loss summary lands with an S/A/B/C/D grade.
 | 10 | 2nd station (Davenport East) · roster grew 4→6 units · `assign <incident>` verb auto-picks closest available units per required class · `pickClosestAvailable` haversine helper · 12 closest-unit tests | 93 | `0b3df49` |
 | 11 | Tier 3 shift YAML (`qc_tier3_001`, 18 min, 9 incidents, 3 narrative arcs) · `activeNarrativeArcs` helper · ShiftHUD now shows live arc chips (violet) for in-flight storylines · 8 thread/Tier-3 tests | 101 | `7fbe3b7` |
 | 12 | Watchfloor design ported (claude.ai/design v1+v2) — scrolling tagged BottomTicker · CenterOverlays (Incident Queue + Shift Rundown + sparkline) · LeftRail accent-cyan active bar · RightRail bordered KIND/depth chip · TopStrip vrule layout · 2.5D isometric city view + day/night cycle + MAP/CITY toggle (`view_mode` in floor store) · live entities project from address bbox onto iso grid · `iso-ripple` keyframe | 101 | `5f613a8` |
-| 13 | Agency filtering on `assign` (16-incident-type compatibility table; `medical_*` only pulls ambulances, `police_*` only pulls patrol/k9/swat_armored, `fire_*` only pulls engine/ladder/rescue/tanker/brush/command) · station markers on MapLibre (cyan square ScatterplotLayer, click→dossier) · per-incident response lines on both views (cyan PathLayer on MapLibre, dashed iso lines on the city view, brighter when on_scene) · 12 new agency-filter tests | **113** | (this commit) |
+| 13 | Agency filtering on `assign` (16-incident-type compatibility table; `medical_*` only pulls ambulances, `police_*` only pulls patrol/k9/swat_armored, `fire_*` only pulls engine/ladder/rescue/tanker/brush/command) · station markers on MapLibre (cyan square ScatterplotLayer, click→dossier) · per-incident response lines on both views (cyan PathLayer on MapLibre, dashed iso lines on the city view, brighter when on_scene) · 12 new agency-filter tests | 113 | `d1cd355` |
+| 14 | Day-14-to-21 sprint (variety unlock) — K9-1 + S1 SWAT join roster (8 units/12 personnel) · floor snapshot serializer + Dexie save/load · `save`/`replay`/`forget` palette verbs with `freeform` + `save` slot kinds · `SavesPanel` in ShiftLobby · `qc_police_001` shift (Brady-Street pattern apex requires patrol+k9+swat+ambulance simultaneously) · career-progress Dexie singleton + `computeUnlockedShifts` gating + lobby locked rows + start-verb wall · tile-and-merge Overpass scrape (3x3 over full QC bbox) · re-baked 26,478 roads / 39,274 buildings / 270 addresses · Steam coming-soon copy + claude.ai/design P7-* capsule prompts | **138** | `51b2a5f`-`af5718f` |
 
-## 65/65 tests · `tsc --noEmit` clean · `vite build` 13s · 1.86 MB / 531 KB gzipped
+## 138/138 tests · `tsc --noEmit` clean
 
 | Test file | Tests | Covers |
 |-----------|-------|--------|
@@ -73,14 +74,27 @@ Producer should answer:
 4. **Palette discoverability** — Ctrl+K reveals everything, but a brand-new player wouldn't know that. Do we need an opening tutorial pop-up, or is "Ctrl+K" in the BottomTicker enough?
 5. **Should Tier 1 introduce all 5 incident types (alarm / med-general / MVA / cardiac / service)?** — or front-load with one type so the player learns the loop before variety lands?
 
-## Day 8+ (Phase 2 — variety)
+## Day 8+ (Phase 2 — variety) — STATUS AT END OF DAY 14
 
-Per `docs/GDD.md` § 11.2, "playable Tier 1" is now done. Phase 2 introduces:
-- **2nd shift** at Tier 2 difficulty (denser pacing, harder address mix)
-- **Multi-unit incidents** (`expected_units` becomes load-bearing — engine + ambulance for MVAs)
-- **Police agency** (`patrol`, `k9`, dispatch routing by agency)
-- **Map quadrant tile-and-merge** (Overpass scrape full QC bbox)
-- **Save/replay verbs** (palette → `save shift_qc_001`, `replay shift_qc_001`)
+Per `docs/GDD.md` § 11.2, "playable Tier 1" is done. Phase-2 lane checklist:
+
+- [x] **2nd shift** at Tier 2 difficulty (`qc_tier2_001`, Day 8)
+- [x] **Multi-unit incidents** (`expected_units` → `required_units`, Day 8)
+- [x] **Police agency** v1 (`patrol`, `k9`, `swat_armored` units + `qc_police_001` shift, Day 14)
+- [x] **Map quadrant tile-and-merge** (Overpass 3x3 over full QC bbox, Day 14)
+- [x] **Save/replay verbs** (palette → `save <name>` / `replay <id>` / `forget <id>`, Day 14)
+- [x] **Career progression** (Dexie-backed `completed_shift_ids`, lobby locked rows, Day 14)
+- [x] **Steam page de-risk** (coming-soon copy + P7-* capsule prompts, Day 14)
+- [ ] **Hi-fi mockup loop on claude.ai/design** (touchpoint #3 — open in Day 16+)
+
+## Day 15+ menu (the lane stays variety until Phase 3 alpha)
+
+- Tier-3 polish pass once the new bake exposes new dispatch corner cases
+- Dossier search pagination for the new 39,274-building dataset
+- Mid-shift cardiac → SWAT chaining (narrative thread requiring the player to
+  resolve i_p04 cardiac before being able to staff the i_p05 apex)
+- Career-reset verb + a "career" panel surface in the lobby footer
+- Capsule art render through claude.ai/design (touchpoint #3)
 
 ## Touchpoint budget
 
