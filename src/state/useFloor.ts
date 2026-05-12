@@ -26,6 +26,7 @@ import type {
 import type { RoadGraph } from "@/sim/roadGraph";
 import type { ShiftOutcome } from "@/sim/shift";
 import { computeOutcome } from "@/sim/shift";
+import type { SaveSlot } from "./db";
 
 export type SimSpeed = 0 | 0.5 | 1 | 2 | 4;
 
@@ -111,6 +112,12 @@ export interface FloorState {
    */
   city_tod_override: number | null;
 
+  // ── saves (Day 14) ──
+  // Cached list of save slots from Dexie. Refreshed on boot and after every
+  // save/delete. Drives the `replay <name>` palette suggestions and the
+  // SavesPanel UI.
+  available_saves: SaveSlot[];
+
   // ── meta ──
   last_event_log: Array<{ ts: number; game_min: number; text: string }>;
 
@@ -132,6 +139,9 @@ export interface FloorState {
   setViewMode: (mode: ViewMode) => void;
   toggleViewMode: () => void;
   setCityTodOverride: (tod: number | null) => void;
+
+  // ── saves actions (Day 14) ──
+  setAvailableSaves: (saves: SaveSlot[]) => void;
 
   // ── shift actions ──
   loadShift: (shift: Shift) => void;
@@ -185,6 +195,8 @@ export const useFloor = create<FloorState>()(
 
     view_mode: "map",
     city_tod_override: null,
+
+    available_saves: [],
 
     last_event_log: [],
 
@@ -271,6 +283,10 @@ export const useFloor = create<FloorState>()(
     },
     setCityTodOverride(tod) {
       set({ city_tod_override: tod });
+    },
+
+    setAvailableSaves(saves) {
+      set({ available_saves: saves });
     },
 
     loadShift(shift) {

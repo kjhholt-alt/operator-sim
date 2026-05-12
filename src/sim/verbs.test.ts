@@ -279,3 +279,83 @@ describe("executeInput", () => {
     expect(r.ok).toBe(false);
   });
 });
+
+describe("Day 14 save / replay / forget verbs", () => {
+  beforeEach(() => seed());
+
+  it("save accepts a multi-word freeform name and returns optimistic ok", () => {
+    const r = executeInput("save my t1 first run");
+    expect(r.ok).toBe(true);
+    expect(r.text).toMatch(/^saving as my-t1-first-run/);
+  });
+
+  it("save rejects when no name was given", () => {
+    const r = executeInput("save");
+    expect(r.ok).toBe(false);
+    expect(r.text).toMatch(/missing name|name required/i);
+  });
+
+  it("replay echoes the slugified id", () => {
+    // Pre-populate the cache so the verb has a valid slot suggestion.
+    useFloor.setState({
+      available_saves: [{
+        id: "demo",
+        name: "demo",
+        city: "quad_cities",
+        difficulty_tier: 1,
+        game_min_total: 0,
+        saved_at: new Date().toISOString(),
+        snapshot: {},
+      }],
+    });
+    const r = executeInput("replay demo");
+    expect(r.ok).toBe(true);
+    expect(r.text).toMatch(/^restoring demo/);
+  });
+
+  it("replay rejects when the id is empty", () => {
+    const r = executeInput("replay");
+    expect(r.ok).toBe(false);
+  });
+
+  it("forget echoes the slugified id", () => {
+    useFloor.setState({
+      available_saves: [{
+        id: "demo",
+        name: "demo",
+        city: "quad_cities",
+        difficulty_tier: 1,
+        game_min_total: 0,
+        saved_at: new Date().toISOString(),
+        snapshot: {},
+      }],
+    });
+    const r = executeInput("forget demo");
+    expect(r.ok).toBe(true);
+    expect(r.text).toMatch(/^forgetting demo/);
+  });
+
+  it("freeform slot suggests nothing (player types freely)", () => {
+    const list = suggestForInput(parseInput("save "));
+    expect(list).toHaveLength(0);
+  });
+
+  it("save slot lists cached saves with a tier+timestamp trailing", () => {
+    useFloor.setState({
+      available_saves: [{
+        id: "demo",
+        name: "Demo",
+        city: "quad_cities",
+        difficulty_tier: 2,
+        game_min_total: 3.5,
+        saved_at: "2026-05-09T20:30:00.000Z",
+        snapshot: {},
+      }],
+    });
+    const list = suggestForInput(parseInput("replay "));
+    expect(list).toHaveLength(1);
+    expect(list[0].token).toBe("demo");
+    expect(list[0].trailing).toMatch(/tier 2/);
+    expect(list[0].trailing).toMatch(/2026-05-09 20:30/);
+  });
+});

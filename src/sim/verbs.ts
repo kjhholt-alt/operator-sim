@@ -14,6 +14,13 @@ import { useFloor } from "@/state/useFloor";
 import { dispatch, sendHome } from "./dispatch";
 import { assignClosest } from "./assign";
 import type { EntityKind, Incident, Unit } from "@/lib/schemas";
+import {
+  deleteSave,
+  listSaves,
+  loadSnapshot,
+  saveSnapshot,
+  slugForSaveName,
+} from "@/state/persist";
 
 // ── Slots ──────────────────────────────────────────────────────────────
 
@@ -45,6 +52,14 @@ export type Slot =
   | {
       name: string;
       kind: "shift"; // available_shifts[].id
+    }
+  | {
+      name: string;
+      kind: "save"; // available_saves[].id
+    }
+  | {
+      name: string;
+      kind: "freeform"; // consumes all trailing tokens as one arg
     };
 
 export interface Suggestion {
@@ -297,6 +312,78 @@ const lobbyVerb: Verb = {
   },
 };
 
+// Day 14 — save / replay / forget.
+//
+// `save <name>` snapshots the full floor store to Dexie under a slugified
+// id. Persisted async; verb returns an optimistic message and writes a
+// confirmation to last_event_log on completion. Re-saving the same name
+// overwrites in place.
+const saveVerb: Verb = {
+  id: "save",
+  label: "snapshot the floor to disk",
+  description: "Persist the current shift, roster, and history under a name. Use `replay <name>` to restore.",
+  slots: [{ name: "name", kind: "freeform" }],
+  run: ([rawName]) => {
+    const name = (rawName ?? "").trim();
+    if (name.length === 0) return { ok: false, reason: "name required (e.g. `save t1 first run`)" };
+    const slug = slugForSaveName(name);
+    void saveSnapshot(name)
+      .then(async (slot) => {
+        const saves = await listSaves();
+        useFloor.getState().setAvailableSaves(saves);
+        useFloor.getState().logEvent(`save ${slot.id} (tier ${slot.difficulty_tier}, ${slot.game_min_total.toFixed(1)} game-min)`);
+      })
+      .catch((err) => {
+        useFloor.getState().logEvent(`save FAILED: ${err instanceof Error ? err.message : String(err)}`);
+      });
+    return { ok: true, text: `saving as ${slug}…` };
+  },
+};
+
+// `replay <id>` loads a snapshot back into the live floor. The road graph
+// is preserved (immutable bake). Suggestions come from available_saves.
+const replayVerb: Verb = {
+  id: "replay",
+  label: "restore a saved snapshot",
+  description: "Load a saved snapshot back into the live floor. Re-arms shift, history, roster.",
+  slots: [{ name: "save", kind: "save" }],
+  run: ([idArg]) => {
+    const id = slugForSaveName(idArg ?? "");
+    if (id.length === 0) return { ok: false, reason: "save id required" };
+    void loadSnapshot(id)
+      .then((slot) => {
+        useFloor.getState().logEvent(`replay ${slot.id} (saved ${slot.saved_at.slice(0, 16).replace("T", " ")})`);
+      })
+      .catch((err) => {
+        useFloor.getState().logEvent(`replay FAILED: ${err instanceof Error ? err.message : String(err)}`);
+      });
+    return { ok: true, text: `restoring ${id}…` };
+  },
+};
+
+// `forget <id>` drops a save slot. No undo. Refreshes the cache so the
+// palette stops suggesting it.
+const forgetVerb: Verb = {
+  id: "forget",
+  label: "delete a saved snapshot",
+  description: "Permanently remove a save slot from Dexie.",
+  slots: [{ name: "save", kind: "save" }],
+  run: ([idArg]) => {
+    const id = slugForSaveName(idArg ?? "");
+    if (id.length === 0) return { ok: false, reason: "save id required" };
+    void deleteSave(id)
+      .then(async () => {
+        const saves = await listSaves();
+        useFloor.getState().setAvailableSaves(saves);
+        useFloor.getState().logEvent(`forgot save ${id}`);
+      })
+      .catch((err) => {
+        useFloor.getState().logEvent(`forget FAILED: ${err instanceof Error ? err.message : String(err)}`);
+      });
+    return { ok: true, text: `forgetting ${id}…` };
+  },
+};
+
 export const VERBS: readonly Verb[] = [
   dispatchVerb,
   assignVerb,
@@ -308,6 +395,9 @@ export const VERBS: readonly Verb[] = [
   restartVerb,
   endShiftVerb,
   lobbyVerb,
+  saveVerb,
+  replayVerb,
+  forgetVerb,
   backVerb,
   forwardVerb,
   clearSelectionVerb,
@@ -443,6 +533,20 @@ export function suggestForInput(parsed: ParsedInput): Suggestion[] {
       }));
   }
 
+  if (slot.kind === "save") {
+    return s.available_saves
+      .filter((sv) => partial.length === 0 || sv.id.toLowerCase().includes(partial))
+      .map((sv) => ({
+        token: sv.id,
+        display: sv.name,
+        trailing: `tier ${sv.difficulty_tier} · ${sv.game_min_total.toFixed(1)}min · ${sv.saved_at.slice(0, 16).replace("T", " ")}`,
+      }));
+  }
+
+  // Freeform slots accept any text. No suggestions to offer — the player
+  // is typing a save name.
+  if (slot.kind === "freeform") return [];
+
   return [];
 }
 
@@ -470,7 +574,18 @@ export function executeInput(raw: string): ExecuteResult {
     const missing = parsed.verb.slots[givenArgs];
     return { ok: false, text: `missing ${missing.name} (slot ${givenArgs + 1}/${requiredArgs})` };
   }
-  const args = parsed.tokens.slice(1, 1 + requiredArgs);
+  // Freeform slots are positional but consume all remaining tokens as one
+  // argument. Only meaningful as the last slot — earlier freeform slots
+  // would swallow subsequent slots.
+  const args: string[] = [];
+  for (let i = 0; i < requiredArgs; i++) {
+    const slot = parsed.verb.slots[i];
+    if (slot.kind === "freeform" && i === requiredArgs - 1) {
+      args.push(parsed.tokens.slice(1 + i).join(" "));
+      break;
+    }
+    args.push(parsed.tokens[1 + i]);
+  }
   const r = parsed.verb.run(args);
   return r.ok ? { ok: true, text: r.text } : { ok: false, text: r.reason };
 }

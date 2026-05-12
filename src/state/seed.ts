@@ -21,6 +21,7 @@ import { parseShift } from "@/sim/shift";
 import qcTier1Yaml from "../../data/shifts/qc_tier1_001.yaml?raw";
 import qcTier2Yaml from "../../data/shifts/qc_tier2_001.yaml?raw";
 import qcTier3Yaml from "../../data/shifts/qc_tier3_001.yaml?raw";
+import { listSaves } from "./persist";
 
 const QC_CENTER: [number, number] = [-90.5776, 41.5236];
 
@@ -183,4 +184,17 @@ export async function bootFloor(city = "quad_cities") {
   f.logEvent(
     `boot — ${shifts.length} shifts available · ${stations.length} stations · ${units.length} units · ${addresses.length} addrs · ${graphSummary} · awaiting lobby`,
   );
+
+  // Day 14: hydrate the saves cache so `replay <id>` autocompletes
+  // straight after boot. Failure is non-fatal — the player can still
+  // save new snapshots even if listing existing ones threw.
+  try {
+    const saves = await listSaves();
+    useFloor.getState().setAvailableSaves(saves);
+    if (saves.length > 0) {
+      f.logEvent(`saves cache · ${saves.length} slot${saves.length === 1 ? "" : "s"} hydrated`);
+    }
+  } catch (err) {
+    f.logEvent(`saves cache · hydration failed (${err instanceof Error ? err.message : String(err)})`);
+  }
 }
