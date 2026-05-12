@@ -21,6 +21,7 @@ import { parseShift } from "@/sim/shift";
 import qcTier1Yaml from "../../data/shifts/qc_tier1_001.yaml?raw";
 import qcTier2Yaml from "../../data/shifts/qc_tier2_001.yaml?raw";
 import qcTier3Yaml from "../../data/shifts/qc_tier3_001.yaml?raw";
+import qcPolice1Yaml from "../../data/shifts/qc_police_001.yaml?raw";
 import { listSaves } from "./persist";
 
 const QC_CENTER: [number, number] = [-90.5776, 41.5236];
@@ -66,7 +67,12 @@ export async function bootFloor(city = "quad_cities") {
   // Day 9: parse every shipped shift YAML (Zod-validated). They go into
   // `available_shifts` for the lobby; only the one the player picks gets
   // armed (loadShift) and starts the spawn timeline.
-  const shifts = [parseShift(qcTier1Yaml), parseShift(qcTier2Yaml), parseShift(qcTier3Yaml)];
+  const shifts = [
+    parseShift(qcTier1Yaml),
+    parseShift(qcTier2Yaml),
+    parseShift(qcTier3Yaml),
+    parseShift(qcPolice1Yaml),
+  ];
 
   // Day 10: two stations across the QC sector. Davenport Central anchors
   // downtown (E1+L1 fire, M1 ambulance, P1 patrol). Davenport East covers

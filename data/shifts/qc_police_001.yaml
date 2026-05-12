@@ -1,0 +1,124 @@
+id: qc_police_001
+date: 2026-05-09
+city: quad_cities
+difficulty_tier: 2
+length_game_min: 16
+notes: |
+  Tier 2 — police-led shift. Brady Street suspect pattern: a routine
+  traffic stop snowballs into a barricaded subject inside a known
+  burglary address. Exercises the full police roster (P1 patrol +
+  K9-1 + S1 SWAT) plus one cardiac to keep the ALS bus committed.
+  The apex (i_p05) is a SWAT-needed warrant requiring patrol + K9 +
+  SWAT + ambulance simultaneously — without all four classes available
+  the dwell timer never starts. A solid feel-test for the Day 14
+  police agency v1 lane.
+
+incidents:
+  # ── Arc A: Brady Street pattern (traffic stop → barricade) ─────────────
+  - id: i_p01
+    spawn_time_game_min: 1.0
+    type: police_traffic
+    severity: low
+    address: 318 Brady Street
+    caller_persona: Reporting party — erratic driver weaving on Brady
+    expected_units: 1 patrol
+    required_units: [patrol]
+    resolution_window_game_min: 1.5
+    narrative_hooks:
+      - Plate is registered to an address two doors down
+    thread_id: t_brady
+
+  - id: i_p02
+    spawn_time_game_min: 3.0
+    type: police_burglary
+    severity: moderate
+    address: 322 Brady Street
+    caller_persona: Neighbor reporting forced rear entry next door
+    expected_units: 1 patrol + 1 k9
+    required_units: [patrol, k9]
+    resolution_window_game_min: 2.5
+    narrative_hooks:
+      - K9 alert at the rear door; subject fled on foot
+    thread_id: t_brady
+
+  - id: i_p03
+    spawn_time_game_min: 5.5
+    type: police_disturbance
+    severity: moderate
+    address: 324 Brady Street
+    caller_persona: Witness, raised voices, possible weapon
+    expected_units: 1 patrol
+    required_units: [patrol]
+    resolution_window_game_min: 2.0
+    narrative_hooks:
+      - Same group as the burglary; tension rising
+    thread_id: t_brady
+
+  # ── Arc B: parallel medical to commit the ALS bus ─────────────────────
+  - id: i_p04
+    spawn_time_game_min: 7.0
+    type: medical_cardiac
+    severity: high
+    address: 1008 Harrison Street
+    caller_persona: Spouse, mid-50s collapse, CPR coached
+    expected_units: 1 ambulance
+    required_units: [ambulance_als]
+    resolution_window_game_min: 2.5
+    narrative_hooks:
+      - Chest pain into left arm, prior MI on record
+
+  # ── Apex: SWAT-needed warrant at the original Brady address ───────────
+  - id: i_p05
+    spawn_time_game_min: 9.5
+    type: police_assault
+    severity: critical
+    address: 318 Brady Street
+    caller_persona: Officer on-scene calling for SWAT — barricaded subject
+    expected_units: 1 patrol + 1 k9 + 1 swat_armored + 1 ambulance
+    required_units: [patrol, k9, swat_armored, ambulance_als]
+    resolution_window_game_min: 3.5
+    narrative_hooks:
+      - Subject from i_p01 retreated inside, armed; victim inside w/ injuries
+    thread_id: t_brady
+
+  # ── Tail: cleanup + secondary call ────────────────────────────────────
+  - id: i_p06
+    spawn_time_game_min: 13.5
+    type: police_burglary
+    severity: low
+    address: 628 Harrison Street
+    caller_persona: Resident, returned home to find front window broken
+    expected_units: 1 patrol + 1 k9
+    required_units: [patrol, k9]
+    resolution_window_game_min: 2.0
+    narrative_hooks:
+      - Possibly related; same MO as the Brady call
+
+  - id: i_p07
+    spawn_time_game_min: 14.5
+    type: service_call
+    severity: low
+    address: 314 Main Street
+    caller_persona: Bystander, debris from chase blocking lane
+    expected_units: 1 patrol
+    required_units: [patrol]
+    resolution_window_game_min: 1.5
+
+narrative_threads:
+  - id: t_brady
+    arc: Brady Street pattern. The traffic stop, the burglary, and the disturbance are the same suspect cycling back. Without committing patrol + K9 + SWAT to the apex, the barricade resolves badly.
+    incident_ids:
+      - i_p01
+      - i_p02
+      - i_p03
+      - i_p05
+    intel_ids: []
+
+intel:
+  - id: it_qc_police_001
+    type: bolo
+    severity: high
+    body: |
+      BOLO — late-model sedan, partial plate "BR-247". Wanted in connection
+      with three burglaries along the Brady corridor in the last week.
+      Subject is known to flee on foot, may be armed.
