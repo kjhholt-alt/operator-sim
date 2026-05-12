@@ -11,6 +11,7 @@
 
 import { useFloor } from "@/state/useFloor";
 import { cn } from "@/lib/cn";
+import { SavesPanel } from "./SavesPanel";
 
 export function ShiftLobby() {
   const status = useFloor((s) => s.shift_status);
@@ -114,6 +115,9 @@ export function ShiftLobby() {
             </ul>
           )}
         </div>
+
+        {/* Saves (Day 14) */}
+        <SavesPanel />
 
         {/* Footer */}
         <div className="border-t border-border-subtle px-4 py-2.5 flex items-center justify-between">
