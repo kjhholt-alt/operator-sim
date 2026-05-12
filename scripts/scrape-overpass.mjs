@@ -2,16 +2,26 @@
 /*
  * Operator Sim — Overpass API scraper.
  *
- * Bakes Quad Cities OSM data to public/data/qc-{roads,buildings,addresses}.{geojson,json}.
- * Run once per city. Output committed to repo (small enough). Re-run only when adding cities.
+ * Bakes city OSM data to public/data/<city>/{roads,buildings,addresses}.{geojson,json}.
+ * Run once per city, output committed to repo. Re-run when expanding the
+ * bbox or adding cities.
  *
  * Usage:
- *   node scripts/scrape-overpass.mjs [--city <slug>] [--bbox <lng_min,lat_min,lng_max,lat_max>]
+ *   node scripts/scrape-overpass.mjs [--city <slug>] [--bbox west,south,east,north] [--tiles NxM]
  *
- * Default: quad_cities, bbox -90.7,41.4,-90.4,41.7
+ * Defaults:
+ *   --city   quad_cities
+ *   --bbox   -90.60,41.51,-90.54,41.55   (downtown Davenport core)
+ *   --tiles  1x1                          (single fetch, no tiling)
+ *
+ * Tiling: full QC (`-90.7,41.4,-90.4,41.7`) overruns the Overpass 1 GB
+ * response cap on the buildings query. Split with e.g. `--tiles 3x3` to
+ * fetch 9 quadrants sequentially with backoff between calls. Adjacent
+ * tiles share edge features; dedup is keyed on feature.properties.id
+ * (OSM way/node id), so the merged output is unique.
  */
 
-import { writeFileSync, mkdirSync, existsSync } from "node:fs";
+import { writeFileSync, mkdirSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -24,16 +34,18 @@ function arg(name, fallback) {
   return i === -1 ? fallback : args[i + 1];
 }
 
-// Davenport-core default for Day-2 demo (~5km × 4km, ~5-15k buildings).
-// Full QC bbox `-90.7,41.4,-90.4,41.7` works but is slow and hits Overpass
-// 406 on the buildings query (response too large). Phase-2 task: tile the
-// scrape into 4 quadrants and merge.
 const city = arg("city", "quad_cities");
 const bboxStr = arg("bbox", "-90.60,41.51,-90.54,41.55");
+const tilesStr = arg("tiles", "1x1");
 const [west, south, east, north] = bboxStr.split(",").map(Number);
+const [tileCols, tileRows] = tilesStr.split("x").map((n) => Math.max(1, parseInt(n, 10) || 1));
 
 if ([west, south, east, north].some(Number.isNaN)) {
-  console.error("Invalid --bbox. Format: lng_min,lat_min,lng_max,lat_max");
+  console.error("Invalid --bbox. Format: west,south,east,north (lng_min,lat_min,lng_max,lat_max)");
+  process.exit(1);
+}
+if (west >= east || south >= north) {
+  console.error("Invalid --bbox: west must be < east and south must be < north");
   process.exit(1);
 }
 
@@ -41,37 +53,19 @@ const outDir = resolve(repoRoot, "public", "data", city);
 mkdirSync(outDir, { recursive: true });
 
 const ENDPOINT = "https://overpass-api.de/api/interpreter";
-
-// Overpass QL — three queries, batched as separate calls to stay under timeout.
-
-const Q_ROADS = `
-[out:json][timeout:180];
-(
-  way["highway"~"^(motorway|trunk|primary|secondary|tertiary|unclassified|residential|service|living_street)$"](${south},${west},${north},${east});
-);
-out tags geom;
-`;
-
-const Q_BUILDINGS = `
-[out:json][timeout:180];
-(
-  way["building"](${south},${west},${north},${east});
-);
-out tags geom;
-`;
-
-const Q_ADDRESSES = `
-[out:json][timeout:180];
-(
-  node["addr:housenumber"]["addr:street"](${south},${west},${north},${east});
-);
-out tags;
-`;
-
 const USER_AGENT = "operator-sim/0.1 (+https://github.com/kjhholt-alt/operator-sim)";
 
+function queries(t) {
+  const bb = `${t.south},${t.west},${t.north},${t.east}`;
+  return {
+    roads: `[out:json][timeout:180];(way["highway"~"^(motorway|trunk|primary|secondary|tertiary|unclassified|residential|service|living_street)$"](${bb}););out tags geom;`,
+    buildings: `[out:json][timeout:180];(way["building"](${bb}););out tags geom;`,
+    addresses: `[out:json][timeout:180];(node["addr:housenumber"]["addr:street"](${bb}););out tags;`,
+  };
+}
+
 async function fetchOverpass(query, label, attempt = 1) {
-  console.log(`[overpass] querying ${label}…${attempt > 1 ? ` (retry ${attempt})` : ""}`);
+  console.log(`[overpass] ${label}${attempt > 1 ? ` (retry ${attempt})` : ""}`);
   const t0 = Date.now();
   const res = await fetch(ENDPOINT, {
     method: "POST",
@@ -82,13 +76,11 @@ async function fetchOverpass(query, label, attempt = 1) {
     },
     body: `data=${encodeURIComponent(query)}`,
   });
-  if (res.status === 429 || res.status === 504) {
-    if (attempt < 3) {
-      const wait = attempt * 5000;
-      console.log(`[overpass] ${label} ${res.status}, waiting ${wait}ms`);
-      await new Promise((r) => setTimeout(r, wait));
-      return fetchOverpass(query, label, attempt + 1);
-    }
+  if ((res.status === 429 || res.status === 504 || res.status === 502) && attempt < 4) {
+    const wait = attempt * 5000;
+    console.log(`[overpass] ${label} ${res.status}, backing off ${wait}ms`);
+    await new Promise((r) => setTimeout(r, wait));
+    return fetchOverpass(query, label, attempt + 1);
   }
   if (!res.ok) {
     const body = await res.text().catch(() => "");
@@ -96,43 +88,37 @@ async function fetchOverpass(query, label, attempt = 1) {
   }
   const json = await res.json();
   const ms = Date.now() - t0;
-  console.log(`[overpass] ${label} → ${json.elements?.length ?? 0} elements in ${ms}ms`);
+  console.log(`[overpass] ${label} -> ${json.elements?.length ?? 0} elements in ${ms}ms`);
   return json;
 }
 
-function waysToGeoJSON(elements, kind) {
+function waysToFeatures(elements, kind) {
   const features = [];
   for (const el of elements) {
     if (!el.geometry || el.geometry.length < 2) continue;
     features.push({
       type: "Feature",
       properties: { id: `${kind}/${el.id}`, ...(el.tags ?? {}) },
-      geometry: {
-        type: "LineString",
-        coordinates: el.geometry.map((p) => [p.lon, p.lat]),
-      },
+      geometry: { type: "LineString", coordinates: el.geometry.map((p) => [p.lon, p.lat]) },
     });
   }
-  return { type: "FeatureCollection", features };
+  return features;
 }
 
-function buildingsToGeoJSON(elements) {
+function buildingsToFeatures(elements) {
   const features = [];
   for (const el of elements) {
     if (!el.geometry || el.geometry.length < 3) continue;
     features.push({
       type: "Feature",
       properties: { id: `building/${el.id}`, ...(el.tags ?? {}) },
-      geometry: {
-        type: "Polygon",
-        coordinates: [el.geometry.map((p) => [p.lon, p.lat])],
-      },
+      geometry: { type: "Polygon", coordinates: [el.geometry.map((p) => [p.lon, p.lat])] },
     });
   }
-  return { type: "FeatureCollection", features };
+  return features;
 }
 
-function nodesToAddressList(elements) {
+function nodesToAddresses(elements) {
   return elements
     .filter((el) => el.tags?.["addr:housenumber"] && el.tags?.["addr:street"])
     .map((el) => ({
@@ -145,30 +131,68 @@ function nodesToAddressList(elements) {
     }));
 }
 
+function buildTiles(west, south, east, north, cols, rows) {
+  const tiles = [];
+  const dx = (east - west) / cols;
+  const dy = (north - south) / rows;
+  for (let j = 0; j < rows; j++) {
+    for (let i = 0; i < cols; i++) {
+      tiles.push({
+        index: j * cols + i,
+        west: west + i * dx,
+        south: south + j * dy,
+        east: west + (i + 1) * dx,
+        north: south + (j + 1) * dy,
+        label: `tile ${j * cols + i + 1}/${cols * rows} (${i},${j})`,
+      });
+    }
+  }
+  return tiles;
+}
+
 async function main() {
-  console.log(`[scrape] city=${city} bbox=[${west},${south},${east},${north}]`);
+  console.log(`[scrape] city=${city} bbox=[${west},${south},${east},${north}] tiles=${tileCols}x${tileRows}`);
   console.log(`[scrape] output: ${outDir}`);
 
-  // Serialize queries — Overpass throttles concurrent requests from the same client.
-  const roads = await fetchOverpass(Q_ROADS, "roads");
-  await new Promise((r) => setTimeout(r, 1500));
-  const buildings = await fetchOverpass(Q_BUILDINGS, "buildings");
-  await new Promise((r) => setTimeout(r, 1500));
-  const addresses = await fetchOverpass(Q_ADDRESSES, "addresses");
+  const tiles = buildTiles(west, south, east, north, tileCols, tileRows);
+  const roadsById = new Map();
+  const buildingsById = new Map();
+  const addressesById = new Map();
 
-  const roadsGeo = waysToGeoJSON(roads.elements ?? [], "way");
-  const buildingsGeo = buildingsToGeoJSON(buildings.elements ?? []);
-  const addressList = nodesToAddressList(addresses.elements ?? []);
+  for (const t of tiles) {
+    const q = queries(t);
+    console.log("");
+    console.log(`[scrape] ${t.label} bbox=[${t.west.toFixed(4)},${t.south.toFixed(4)},${t.east.toFixed(4)},${t.north.toFixed(4)}]`);
+    const roads = await fetchOverpass(q.roads, `${t.label} roads`);
+    await new Promise((r) => setTimeout(r, 1500));
+    const buildings = await fetchOverpass(q.buildings, `${t.label} buildings`);
+    await new Promise((r) => setTimeout(r, 1500));
+    const addresses = await fetchOverpass(q.addresses, `${t.label} addresses`);
+    await new Promise((r) => setTimeout(r, 1500));
+
+    for (const f of waysToFeatures(roads.elements ?? [], "way")) {
+      if (!roadsById.has(f.properties.id)) roadsById.set(f.properties.id, f);
+    }
+    for (const f of buildingsToFeatures(buildings.elements ?? [])) {
+      if (!buildingsById.has(f.properties.id)) buildingsById.set(f.properties.id, f);
+    }
+    for (const a of nodesToAddresses(addresses.elements ?? [])) {
+      if (!addressesById.has(a.id)) addressesById.set(a.id, a);
+    }
+  }
+
+  const roadsGeo = { type: "FeatureCollection", features: Array.from(roadsById.values()) };
+  const buildingsGeo = { type: "FeatureCollection", features: Array.from(buildingsById.values()) };
+  const addressList = Array.from(addressesById.values());
 
   writeFileSync(resolve(outDir, "roads.geojson"), JSON.stringify(roadsGeo));
   writeFileSync(resolve(outDir, "buildings.geojson"), JSON.stringify(buildingsGeo));
   writeFileSync(resolve(outDir, "addresses.json"), JSON.stringify(addressList));
 
-  // Compact stats
   console.log("");
-  console.log(`✓ roads:     ${roadsGeo.features.length} features`);
-  console.log(`✓ buildings: ${buildingsGeo.features.length} features`);
-  console.log(`✓ addresses: ${addressList.length} entries`);
+  console.log(`✓ roads:     ${roadsGeo.features.length} features (deduped)`);
+  console.log(`✓ buildings: ${buildingsGeo.features.length} features (deduped)`);
+  console.log(`✓ addresses: ${addressList.length} entries (deduped)`);
   console.log("");
   console.log(`done. files in ${outDir}`);
 }
