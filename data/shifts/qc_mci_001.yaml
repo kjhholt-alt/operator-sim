@@ -71,7 +71,7 @@ incidents:
   # ── Arc B: electrical fire (forces engine commit) ───────────────────
   - id: i_mci_04
     spawn_time_game_min: 6.5
-    type: fire_structure
+    type: fire_residential
     severity: critical
     address: 2200 West Kimberly Road
     caller_persona: Neighbor, smoke from windows + breaker panel fire
@@ -113,7 +113,7 @@ incidents:
   # ── APEX: partial collapse rescue (all four agencies, concurrent) ───
   - id: i_mci_07
     spawn_time_game_min: 11.0
-    type: rescue_collapse
+    type: rescue_motor_vehicle
     severity: critical
     address: 3301 West Kimberly
     caller_persona: First-arriving engine officer, partial collapse of front porch w/ trapped occupants
@@ -173,7 +173,7 @@ narrative_threads:
 
 intel:
   - id: it_qc_mci_001
-    type: situation_report
+    type: fed_advisory
     severity: critical
     body: |
       SITUATION — West Kimberly Road 300-3300 block, water-main rupture

@@ -13,12 +13,16 @@ import type { Address, Incident, Shift } from "@/lib/schemas";
 
 const SHIFT_PATH = resolve(__dirname, "..", "..", "data", "shifts", "qc_tier1_001.yaml");
 const TIER3_PATH = resolve(__dirname, "..", "..", "data", "shifts", "qc_tier3_001.yaml");
+const MCI_PATH = resolve(__dirname, "..", "..", "data", "shifts", "qc_mci_001.yaml");
 
 function shippedYaml(): string {
   return readFileSync(SHIFT_PATH, "utf8");
 }
 function tier3Yaml(): string {
   return readFileSync(TIER3_PATH, "utf8");
+}
+function mciYaml(): string {
+  return readFileSync(MCI_PATH, "utf8");
 }
 
 function makeAddress(id: string, street: string): Address {
@@ -374,6 +378,40 @@ describe("Tier 3 shift (shipped YAML)", () => {
     const shift = parseShift(tier3Yaml());
     const apex = shift.incidents.find((i) => i.id === "i_307")!;
     expect(apex.required_units.sort()).toEqual(["ambulance_als", "engine", "ladder"]);
+  });
+});
+
+describe("MCI shift (Day 14-21 apex)", () => {
+  it("parses qc_mci_001 through Zod with 9 incidents and 1 narrative thread", () => {
+    const shift = parseShift(mciYaml());
+    expect(shift.id).toBe("qc_mci_001");
+    expect(shift.difficulty_tier).toBe(3);
+    expect(shift.length_game_min).toBe(20);
+    expect(shift.incidents).toHaveLength(9);
+    expect(shift.narrative_threads.map((t) => t.id)).toEqual(["t_mci"]);
+  });
+
+  it("MCI apex (i_mci_07) requires engine + ladder + ambulance + patrol simultaneously", () => {
+    const shift = parseShift(mciYaml());
+    const apex = shift.incidents.find((i) => i.id === "i_mci_07")!;
+    expect(apex.severity).toBe("critical");
+    expect(apex.required_units.sort()).toEqual(
+      ["ambulance_als", "engine", "ladder", "patrol"]
+    );
+  });
+
+  it("MCI incidents reference only declared thread ids (or none)", () => {
+    const shift = parseShift(mciYaml());
+    const declared = new Set(shift.narrative_threads.map((t) => t.id));
+    for (const si of shift.incidents) {
+      if (si.thread_id) expect(declared.has(si.thread_id)).toBe(true);
+    }
+  });
+
+  it("MCI ships two intel rows (fed_advisory + bolo)", () => {
+    const shift = parseShift(mciYaml());
+    expect(shift.intel).toHaveLength(2);
+    expect(shift.intel.map((i) => i.type).sort()).toEqual(["bolo", "fed_advisory"]);
   });
 });
 
