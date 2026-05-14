@@ -2,14 +2,41 @@
 
 > Updated by Producer agent every 30 min during active sprints. This file IS the truth.
 
-**Last updated:** 2026-05-11 — Day 14 sprint shipped (variety unlock)
+**Last updated:** 2026-05-14 — Wishlist-push artifacts shipped (autonomous sprint)
 **Phase:** Day 0–14 ✅ · Phase 2 (variety) — save/replay, full QC bake, police agency v1, career gating, Steam page drafted
 **Build:** v0.0.14-day14 (master) · `feat/war-smoke` branch carries Day 12.5 (not merged)
 **Repo:** [github.com/kjhholt-alt/operator-sim](https://github.com/kjhholt-alt/operator-sim)
+**Public demo:** **https://operator-sim.vercel.app** (live, first deploy 2026-05-14 03:30 UTC)
 **End-of-year goal:** Steam Early Access launch by 2026-12-31. See `docs/GDD.md` § 11 for the 8-phase roadmap.
 **CI:** workflows green; `npm run validate:shifts` covers 4 shifts (3 tiers + police lane).
 **Open touchpoint:** **Touchpoint #1 — "Does it feel like Operator Sim?"** Posted to `#claude-chat`. Day 14 ships variety so the touchpoint answer has more surface to test.
 **Blockers:** none
+
+## 2026-05-14 sprint — wishlist push (master adb3377)
+
+Three artifacts to start the wishlist accumulation flywheel before
+Phase 4 (Steam appid). All under autonomous build, T0 10:21pm CST.
+
+1. **Public web demo deployed** — operator-sim.vercel.app, Vite/React
+   static build, vercel project auto-created and aliased.
+2. **`src/components/Welcome.tsx`** — first-visit landing splash.
+   Three-tile feature grid (real streets / multi-agency / career),
+   PLAY DEMO sets localStorage, WISHLIST opens Steam search until
+   appid lands. `?play=1` bypass for shared social links. Token-strict,
+   no inline hex. Lives behind localStorage gate so returning visitors
+   skip straight to the console.
+3. **`docs/steam/TRAILER.md`** — 45-second reveal-trailer script,
+   12-shot storyboard, music guidance (Loscil/Chris Zabriskie ambient
+   bed, no sirens), OBS capture checklist, 15s social + 6s vertical
+   variants. Kruz records, edits, uploads when ready.
+4. **`docs/steam/PRESS_KIT.md`** — one-pager for streamers and
+   dispatch-sim YouTubers (Carbon, Eevomeer, Tank Mobile). Quick
+   facts, what's different (5-point list), press copy paragraph,
+   logo/screenshot asset slots, CC-BY 4.0.
+
+138/138 vitest passing + tsc --noEmit clean + validate-shifts 4/4.
+
+---
 
 ---
 
