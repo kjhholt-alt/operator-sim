@@ -1,0 +1,194 @@
+id: qc_mci_001
+date: 2026-05-14
+city: quad_cities
+difficulty_tier: 3
+length_game_min: 20
+notes: |
+  Tier 3 (apex) — Mass Casualty Incident. A water-main rupture on
+  West Kimberly Road at peak morning rush sets off a 20-game-minute
+  cascade across all four agencies. Initial property damage triggers
+  EMS demand from cold-water exposure + electrical shorts, which
+  triggers structural concerns needing fire + heavy rescue, which
+  triggers crowd control needing police. The apex (i_mci_07) is a
+  partial-collapse three-deep rescue at the rupture epicenter
+  requiring engine + ladder + ambulance + patrol simultaneously —
+  without all four committed the dwell timer never starts and the
+  call slips into FAIL.
+
+  This is the first shift where the 8-unit / 2-station roster is
+  insufficient to clear every call inside its window. The dispatcher
+  has to accept that two concurrent moderate calls will be late.
+  Grade S = all critical apex calls resolved cleanly, two moderates
+  late by <30 game-sec.
+
+  Career-locked behind tier 3 (qc_tier3_001) completion, per
+  computeUnlockedShifts() in src/state/career.ts.
+
+incidents:
+  # ── Setup: water-main rupture (the trigger) ─────────────────────────
+  - id: i_mci_01
+    spawn_time_game_min: 1.0
+    type: service_call
+    severity: low
+    address: 320 West Kimberly Road
+    caller_persona: Public Works dispatcher, water-main breach reported by sensor
+    expected_units: 1 patrol
+    required_units: [patrol]
+    resolution_window_game_min: 2.0
+    narrative_hooks:
+      - 18-inch main rupture, basement flooding reported on this block
+      - Pre-position; the real calls are coming
+    thread_id: t_mci
+
+  # ── Arc A: cold-water EMS cluster (concurrent ALS demand) ───────────
+  - id: i_mci_02
+    spawn_time_game_min: 3.0
+    type: medical_general
+    severity: high
+    address: 902 West Kimberly Road
+    caller_persona: Frantic spouse, husband collapsed in flooded basement
+    expected_units: 1 ambulance
+    required_units: [ambulance_als]
+    resolution_window_game_min: 2.0
+    narrative_hooks:
+      - Cold-water immersion, possible cardiac compromise
+      - Subject was bailing water with a sump pump
+    thread_id: t_mci
+
+  - id: i_mci_03
+    spawn_time_game_min: 4.5
+    type: medical_cardiac
+    severity: critical
+    address: 1320 West Kimberly Road
+    caller_persona: Adult daughter, elderly father not responsive
+    expected_units: 1 ambulance
+    required_units: [ambulance_als]
+    resolution_window_game_min: 2.5
+    narrative_hooks:
+      - Cold exposure + prior cardiac history, full arrest suspected
+      - Both ambulances now committed to West Kimberly
+
+  # ── Arc B: electrical fire (forces engine commit) ───────────────────
+  - id: i_mci_04
+    spawn_time_game_min: 6.5
+    type: fire_structure
+    severity: critical
+    address: 2200 West Kimberly Road
+    caller_persona: Neighbor, smoke from windows + breaker panel fire
+    expected_units: 1 engine + 1 ladder
+    required_units: [engine, ladder]
+    resolution_window_game_min: 3.5
+    narrative_hooks:
+      - Water + electrical = panel fault, basement smoke visible
+      - Adjacent properties at risk; ladder needed for vent
+    thread_id: t_mci
+
+  # ── Arc C: crowd control (police lane) ──────────────────────────────
+  - id: i_mci_05
+    spawn_time_game_min: 8.0
+    type: police_disturbance
+    severity: moderate
+    address: 307 Harrison Street
+    caller_persona: Bystander, residents fighting over a generator
+    expected_units: 1 patrol
+    required_units: [patrol]
+    resolution_window_game_min: 1.5
+    narrative_hooks:
+      - Power's out, tempers shorter, generator dispute
+    thread_id: t_mci
+
+  - id: i_mci_06
+    spawn_time_game_min: 9.0
+    type: police_traffic
+    severity: moderate
+    address: 309 Harrison Street
+    caller_persona: Driver, vehicle stalled in standing water at intersection
+    expected_units: 1 patrol
+    required_units: [patrol]
+    resolution_window_game_min: 1.5
+    narrative_hooks:
+      - Sinkhole forming under the stalled vehicle
+      - K9 not needed; pure traffic control
+
+  # ── APEX: partial collapse rescue (all four agencies, concurrent) ───
+  - id: i_mci_07
+    spawn_time_game_min: 11.0
+    type: rescue_collapse
+    severity: critical
+    address: 3301 West Kimberly
+    caller_persona: First-arriving engine officer, partial collapse of front porch w/ trapped occupants
+    expected_units: 1 engine + 1 ladder + 1 ambulance + 1 patrol
+    required_units: [engine, ladder, ambulance_als, patrol]
+    resolution_window_game_min: 4.5
+    narrative_hooks:
+      - Three occupants trapped under collapsed porch + entry steps
+      - Heavy lifting + cribbing + ALS extrication
+      - Patrol needed for scene control + immediate-family management
+    thread_id: t_mci
+
+  # ── Tail: secondary calls (test scarcity recovery) ──────────────────
+  - id: i_mci_08
+    spawn_time_game_min: 14.5
+    type: medical_general
+    severity: moderate
+    address: 1008 Harrison Street
+    caller_persona: Independent — unrelated to MCI, cyclist down at intersection
+    expected_units: 1 ambulance
+    required_units: [ambulance_als]
+    resolution_window_game_min: 2.0
+    narrative_hooks:
+      - Adult cyclist vs sedan, conscious but bleeding head
+      - Both ALS units still committed to West Kimberly scene
+
+  - id: i_mci_09
+    spawn_time_game_min: 16.5
+    type: service_call
+    severity: low
+    address: 628 Harrison Street
+    caller_persona: Public Works supervisor, main is shut off, scene safe-to-release
+    expected_units: 1 patrol
+    required_units: [patrol]
+    resolution_window_game_min: 1.5
+    narrative_hooks:
+      - End-of-incident closeout; patrol releases scene to PW
+
+narrative_threads:
+  - id: t_mci
+    arc: |
+      Mass Casualty Incident on West Kimberly. A water-main breach
+      cascades into cold-water medical emergencies, an electrical
+      structure fire from flooded panel, crowd control, and finally
+      a partial structural collapse at the rupture's epicenter
+      requiring all four agencies simultaneously. The dispatcher
+      must accept some moderate calls will be late and prioritize
+      the apex collapse rescue cleanly.
+    incident_ids:
+      - i_mci_01
+      - i_mci_02
+      - i_mci_04
+      - i_mci_05
+      - i_mci_07
+    intel_ids:
+      - it_qc_mci_001
+
+intel:
+  - id: it_qc_mci_001
+    type: situation_report
+    severity: critical
+    body: |
+      SITUATION — West Kimberly Road 300-3300 block, water-main rupture
+      at 320 West Kimberly. Public Works dispatch confirms 18-inch main;
+      basement flooding reported by sensor at 04:42. Power is out on the
+      block; electrical panels may be compromised. Expect cold-water
+      medical compromise + secondary electrical fires + crowd control
+      as residents protest the slow main shut-off. Stage one ambulance
+      forward at 320 West Kimberly if available before the cascade.
+
+  - id: it_qc_mci_002
+    type: bolo
+    severity: moderate
+    body: |
+      ADVISORY — All units, scene of West Kimberly MCI is uneven ground
+      with standing water. Drive carefully approaching the 300-3300
+      block; sinkhole forming under stalled vehicle near 309 Harrison
+      Street intersection.
