@@ -7,12 +7,21 @@ import { BottomTicker } from "@/components/shell/BottomTicker";
 import { CommandPalette } from "@/components/shell/CommandPalette";
 import { ShiftSummary } from "@/components/shell/ShiftSummary";
 import { ShiftLobby } from "@/components/shell/ShiftLobby";
+import { Welcome, shouldShowWelcome } from "@/components/Welcome";
 import { bootFloor } from "@/state/seed";
 import { startTickLoop, stopTickLoop } from "@/sim/tick";
 import { useFloor } from "@/state/useFloor";
 
 function App() {
   const [paletteOpen, setPaletteOpen] = useState(false);
+  // Welcome splash: first visit only. ?play=1 bypasses (useful for sharing
+  // direct demo links). dismissWelcome() inside Welcome sets the flag.
+  const [showWelcome, setShowWelcome] = useState(() => {
+    if (typeof window === "undefined") return false;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("play") === "1") return false;
+    return shouldShowWelcome();
+  });
 
   // Boot-time seed: load addresses + demo entities so the floor is populated.
   // Then start the wall-clock tick loop so units actually move.
@@ -58,6 +67,7 @@ function App() {
       <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
       <ShiftSummary />
       <ShiftLobby />
+      {showWelcome && <Welcome onEnter={() => setShowWelcome(false)} />}
     </div>
   );
 }
