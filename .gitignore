@@ -49,3 +49,5 @@ src-tauri/.cargo/
 .claude/worktrees/
 .discord-payload.json
 .discord-day*.json
+
+.vercel
